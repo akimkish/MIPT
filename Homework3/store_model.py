@@ -1,20 +1,14 @@
 from typing import NoReturn
 
 
-# class NegativeQuantity(Exception):
-#     def __init__(
-#         self,
-#         msg="We have a problem! The products's quantity in stock cannot be negative!",
-#     ):
-#         self.message = msg
-#         super().__init__(self.message)
+class NegativeQuantity(Exception):
+    def __init__(self, msg="We have a problem! The products's quantity in stock cannot be negative!"):
+        self.message = msg
+        super().__init__(self.message)
 
 
 class NotEnoughQuantity(Exception):
-    def __init__(
-        self,
-        msg="The store doesn't have enough product!\nThe products's quantity in stock cannot be negative!",
-    ):
+    def __init__(self, msg="The store doesn't have enough product!"):
         self.message = msg
         super().__init__(self.message)
 
@@ -25,22 +19,19 @@ class Product:
         self.price = price
         self.stock = stock
 
-    def __repr__(self) -> str:
-        return f"It's {self.name}"
+    def __repr__(self):
+        return self.name
 
     def update_stock(self, quantity: int) -> str:
         try:
-            self.stock -= quantity
+            self.stock += quantity
             if self.stock < 0:
-                self.stock += quantity
-                raise NotEnoughQuantity
+                self.stock -= quantity
+                raise NegativeQuantity
             else:
-                print(
-                    f"Quantity of product {self.name} in stock is {self.stock} pieces now."
-                )
-        except NotEnoughQuantity as exp:
+                print(f"Quantity of product {self.name} in stock is {self.stock} pieces now.")
+        except NegativeQuantity as exp:
             print(exp)
-        # return self.stock - quantity
 
 
 class Order:
@@ -49,16 +40,15 @@ class Order:
 
     def add_products(self, product: Product, quantity: int) -> str:
         try:
-            if product.stock - quantity < 0:
+            if product.stock < quantity:
+                self.order_products[product] = 0
                 raise NotEnoughQuantity
             else:
                 self.order_products[product] = quantity
-                print(
-                    f"Product {product.name} in amount of {quantity} pieces added to order."
-                )
-                product.update_stock(quantity)
-        except NotEnoughQuantity as exp1:
-            print(exp1)
+                print(f"Product {product.name} in amount of {quantity} pieces added to order.")
+        except NotEnoughQuantity as exp:
+            print(exp)
+        product.update_stock(-quantity)
 
     def calculate_total(self):
         total = 0
@@ -100,10 +90,11 @@ if __name__ == "__main__":
     order = store.create_order()
     print(order.order_products)
 
-    order.add_products(product1, 6)
-    order.add_products(product2, 11)
+    order.add_products(product1, 2)
+    order.add_products(product2, 3)
 
     print(order.order_products)
-    print(order.calculate_total())
+    total = order.calculate_total()
+    print(f"Total cost of the order: {total}$")
 
     store.list_products()
