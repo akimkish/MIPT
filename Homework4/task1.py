@@ -77,6 +77,8 @@ def return_book(book: Book) -> NoReturn:
 
 # Test
 if __name__ == "__main__":
+    first_user = User(name="Akim", email="akim@ya.ru", membership_id="id1")
+    print(first_user)
     Demian = Book(
         title="Demian",
         author="Herman Hesse",
