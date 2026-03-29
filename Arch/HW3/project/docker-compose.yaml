@@ -1,0 +1,32 @@
+services:
+  web1:
+    build:
+      context: ./app1
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      APP1_HOST: app2
+      APP1_PORT: 5000
+      DEBUG: "True"
+    networks:
+      - network
+
+  web2:
+    build:
+      context: ./app2
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    environment:
+      APP2_HOST: app1
+      APP2_PORT: 8000
+      DEBUG: "True"
+    depends_on:
+      - web1
+    networks:
+      - network
+
+networks:
+  network:
+    driver: bridge
