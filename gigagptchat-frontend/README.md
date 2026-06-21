@@ -101,63 +101,7 @@
 
 Проект использует **модульную архитектуру** с элементами **Feature-Sliced Design (FSD)**:
 
-gigachat-web-app/
-├── public/ # Статические файлы
-├── src/
-│ ├── app/
-│ │ └── providers/ # Провайдеры приложения
-│ │ ├── ChatProvider.tsx # Состояние чатов и сообщений
-│ │ ├── ModelProvider.tsx # Состояние моделей GigaChat
-│ │ ├── ErrorBoundary.tsx # Обработка ошибок компонентов
-│ │ └── index.ts
-│ ├── entities/ # Бизнес-сущности
-│ │ ├── chat/ # Сущность чата (типы)
-│ │ │ └── types.ts
-│ │ └── message/ # Сущность сообщения (типы + UI)
-│ │ ├── types.ts
-│ │ └── ui/
-│ │ └── MessageItem.tsx
-│ ├── features/ # Функциональные модули
-│ │ └── sendMessage/ # Форма отправки сообщения
-│ │ └── SendMessageForm.tsx
-│ ├── pages/ # Страницы приложения
-│ │ └── chat/ # Главная страница чата
-│ │ ├── ChatPage.tsx
-│ │ └── index.ts
-│ ├── shared/ # Переиспользуемые модули
-│ │ ├── api/ # Работа с API
-│ │ │ ├── auth.ts # OAuth аутентификация
-│ │ │ ├── config.ts # Конфигурация API
-│ │ │ ├── gigachat.ts # Клиент GigaChat API
-│ │ │ └── index.ts
-│ │ ├── hooks/ # Кастомные хуки
-│ │ │ └── useStreaming.ts
-│ │ └── ui/ # UI компоненты
-│ │ ├── Button.tsx
-│ │ ├── Input.tsx
-│ │ ├── TextArea.tsx
-│ │ └── index.ts
-│ ├── widgets/ # Самостоятельные блоки UI
-│ │ ├── chat/
-│ │ │ ├── ChatWindow.tsx
-│ │ │ └── ModelSelector.tsx
-│ │ └── sidebar/
-│ │ ├── Sidebar.tsx
-│ │ ├── ChatListItem.tsx
-│ │ └── index.ts
-│ ├── App.tsx
-│ ├── main.tsx
-│ └── index.css
-├── .env.example
-├── .gitignore
-├── index.html
-├── package.json
-├── postcss.config.js
-├── tailwind.config.js
-├── tsconfig.json
-├── tsconfig.node.json
-├── vite.config.ts
-└── README.md
+![alt text](.screenshotss/image-11.png)
 
 ### Ключевые паттерны
 
@@ -180,23 +124,23 @@ gigachat-web-app/
 ### Шаги установки
 
 1. **Клонировать репозиторий**
-   git clone git@github.com: && cd gigagptchat-frontend
+   git clone https://github.com/akimkish/MIPT/tree/master/gigagptchat-frontend && cd gigagptchat-frontend
 
 2. **Установить зависимости**
-   npm install
+- npm install
 
 3. **Создать файл окружения**
-   cp .env.example .env
+- cp .env.example .env
 
 4. **Настроить переменные окружения**
-   Откройте .env и добавьте ваш VITE_AUTH_KEY:
-   VITE_AUTH_KEY=your_authorization_key_here
+- Откройте .env и добавьте ваш VITE_AUTH_KEY:
+VITE_AUTH_KEY=your_authorization_key_here
 
 5. **Запустить dev-сервер**
-   npm run dev
+- npm run dev
 
 6. **Открыть приложение**
-   Перейдите по адресу http://localhost:5173
+- Перейдите по адресу http://localhost:5173
 
 ## 🔐 Переменные окружения
 
