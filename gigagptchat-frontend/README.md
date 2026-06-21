@@ -124,20 +124,20 @@
 ### Шаги установки
 
 1. **Клонировать репозиторий**
-   git clone https://github.com/akimkish/MIPT/tree/master/gigagptchat-frontend && cd gigagptchat-frontend
+`git clone https://github.com/akimkish/MIPT/tree/master/gigagptchat-frontend && cd gigagptchat-frontend`
 
 2. **Установить зависимости**
-- npm install
+`npm install`
 
 3. **Создать файл окружения**
-- cp .env.example .env
+`cp .env.example .env`
 
 4. **Настроить переменные окружения**
 - Откройте .env и добавьте ваш VITE_AUTH_KEY:
-VITE_AUTH_KEY=your_authorization_key_here
+`VITE_AUTH_KEY=your_authorization_key_here`
 
 5. **Запустить dev-сервер**
-- npm run dev
+`npm run dev`
 
 6. **Открыть приложение**
 - Перейдите по адресу http://localhost:5173
