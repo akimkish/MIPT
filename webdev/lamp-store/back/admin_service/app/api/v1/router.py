@@ -1,0 +1,10 @@
+"""Сборка версии API v1 admin_service из отдельных роутеров сущностей."""
+
+from fastapi import APIRouter
+
+from app.api.v1.admins import router as admins_router
+from app.api.v1.auth import router as auth_router
+
+api_router = APIRouter()
+api_router.include_router(auth_router)
+api_router.include_router(admins_router)
