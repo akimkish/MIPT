@@ -1,5 +1,3 @@
-"""ORM-модель журнала аудита действий администраторов."""
-
 import uuid
 from datetime import datetime
 from typing import Any
@@ -15,12 +13,6 @@ from app.models.enums import AuditAction
 
 class AuditLog(Base):
     """Запись журнала аудита. Только добавление — обновления и удаления нет.
-
-    `admin_id` — FK `RESTRICT`, но nullable: `login_failed` может
-    произойти для несуществующего email, тогда действующего
-    администратора для ссылки нет, и в записи остаётся только
-    `actor_email`.
-
     Attributes:
         log_id: Первичный ключ (UUID4), генерируется в Python.
         admin_id: Администратор — инициатор действия; `None`, если его

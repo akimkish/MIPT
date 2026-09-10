@@ -1,5 +1,3 @@
-"""ORM-модель администратора admin_service."""
-
 import uuid
 from datetime import datetime
 
@@ -21,12 +19,6 @@ from app.models.enums import RoleName
 
 class Admin(Base):
     """Учётная запись администратора панели управления.
-
-    Роль хранится строкой (`role_name`), а не FK на справочник ролей:
-    единственный источник истины по правам — словарь `ROLE_PERMISSIONS`
-    в коде сервиса (core/roles.py). Список допустимых ролей продублирован
-    здесь в CHECK-ограничении и в `RoleName`; отдельной таблицы `roles`
-    в проекте сознательно нет.
 
     Attributes:
         admin_id: Первичный ключ (UUID4), генерируется в Python.

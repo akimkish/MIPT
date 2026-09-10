@@ -1,17 +1,9 @@
-"""Начальная миграция admin_service: таблицы admins и audit_log.
-
-Revision ID: 0001
-Revises:
-Create Date: 2026-09-09
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
-# --- Идентификаторы ревизии Alembic --------------------------------------
 revision: str = "0001"
 down_revision: str | None = None
 branch_labels: Sequence[str] | None = None
@@ -19,11 +11,7 @@ depends_on: Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    """Создаёт таблицы `admins` и `audit_log`.
-
-    Порядок важен: `audit_log.admin_id` ссылается на `admins.admin_id`,
-    поэтому `admins` создаётся первой.
-    """
+    """Создаёт таблицы `admins` и `audit_log`."""
     op.create_table(
         "admins",
         sa.Column(
@@ -48,9 +36,7 @@ def upgrade() -> None:
             nullable=False,
             server_default=sa.text("0"),
         ),
-        sa.Column(
-            "locked_until", sa.TIMESTAMP(timezone=True), nullable=True
-        ),
+        sa.Column("locked_until", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("last_login", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column(
             "created_at",
@@ -74,9 +60,7 @@ def upgrade() -> None:
             name="role_name_allowed",
         ),
     )
-    op.create_index(
-        "ix_admins_role_name", "admins", ["role_name"], unique=False
-    )
+    op.create_index("ix_admins_role_name", "admins", ["role_name"], unique=False)
 
     op.create_table(
         "audit_log",
@@ -86,15 +70,11 @@ def upgrade() -> None:
             primary_key=True,
             nullable=False,
         ),
-        sa.Column(
-            "admin_id", postgresql.UUID(as_uuid=True), nullable=True
-        ),
+        sa.Column("admin_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("actor_email", sa.String(length=255), nullable=False),
         sa.Column("action", sa.String(length=30), nullable=False),
         sa.Column("entity_type", sa.String(length=50), nullable=True),
-        sa.Column(
-            "entity_id", postgresql.UUID(as_uuid=True), nullable=True
-        ),
+        sa.Column("entity_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("payload", postgresql.JSONB(), nullable=True),
         sa.Column("ip_address", sa.String(length=45), nullable=True),
         sa.Column(
@@ -130,11 +110,7 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Удаляет `audit_log` и `admins` в порядке, обратном созданию.
-
-    `audit_log` — первой: у неё есть FK на `admins`, `admins` без
-    зависимых таблиц удаляется последней.
-    """
+    """Удаляет `audit_log` и `admins` в порядке, обратном созданию."""
     op.drop_index("ix_audit_log_action_created_at", table_name="audit_log")
     op.drop_index("ix_audit_log_admin_id_created_at", table_name="audit_log")
     op.drop_table("audit_log")

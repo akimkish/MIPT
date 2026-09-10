@@ -1,5 +1,3 @@
-"""Тесты журнала аудита. Раздел 4."""
-
 import pytest
 from sqlalchemy import select
 
@@ -73,9 +71,21 @@ class TestAuditLogCoverage:
         admin_two, _ = await create_admin(db_session)
         repo = AuditLogRepository(db_session)
 
-        await repo.record(action=AuditAction.LOGIN_SUCCESS, actor_email=admin_one.email, admin_id=admin_one.admin_id)
-        await repo.record(action=AuditAction.LOGIN_FAILED, actor_email=admin_two.email, admin_id=admin_two.admin_id)
-        await repo.record(action=AuditAction.LOGIN_SUCCESS, actor_email=admin_one.email, admin_id=admin_one.admin_id)
+        await repo.record(
+            action=AuditAction.LOGIN_SUCCESS,
+            actor_email=admin_one.email,
+            admin_id=admin_one.admin_id,
+        )
+        await repo.record(
+            action=AuditAction.LOGIN_FAILED,
+            actor_email=admin_two.email,
+            admin_id=admin_two.admin_id,
+        )
+        await repo.record(
+            action=AuditAction.LOGIN_SUCCESS,
+            actor_email=admin_one.email,
+            admin_id=admin_one.admin_id,
+        )
 
         entries = await repo.list_for_admin(admin_one.admin_id)
 
@@ -83,12 +93,5 @@ class TestAuditLogCoverage:
         assert entries[0].created_at <= entries[1].created_at
 
     def test_repository_has_no_update_method(self) -> None:
-        """Структурная проверка неизменяемости журнала: своего update-метода нет.
-
-        AuditLogRepository наследует update() из BaseRepository — это
-        осознанно (симметрия интерфейса), но сам сервисный слой не должен
-        вызывать его для AuditLog нигде в коде. Тест фиксирует хотя бы то,
-        что специализированного, "поощряющего" update-метода для журнала
-        не добавлено (в отличие от, например, record()).
-        """
+        """Структурная проверка неизменяемости журнала: своего update-метода нет."""
         assert not hasattr(AuditLogRepository, "update_entry")

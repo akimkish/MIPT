@@ -1,10 +1,3 @@
-"""Бизнес-логика витрины: расчёт цен с учётом акций и выборка каталога.
-
-Модуль — единственное место в проекте, где считаются скидки:
-orders_service о промо-логике не знает и получает уже рассчитанную цену
-(см. PROMPT_CONTEXT.md → domain_decisions → «Скидки»).
-"""
-
 import uuid
 from collections import defaultdict
 from collections.abc import Sequence
@@ -42,10 +35,6 @@ class PriceQuote(NamedTuple):
 class CartQuote(NamedTuple):
     """Снимок позиции корзины: цена плюс данные для позиции заказа.
 
-    Поля повторяют то, что orders_service копирует в `order_items`.
-    У недоступного товара заполнены только `product_id` и
-    `is_available`.
-
     Attributes:
         product_id: Идентификатор товара.
         is_available: Доступен ли товар для заказа.
@@ -67,6 +56,7 @@ class CartQuote(NamedTuple):
     original_unit_price: Decimal | None = None
     unit_price: Decimal | None = None
     promo_id: uuid.UUID | None = None
+
 
 def round_money(value: Decimal) -> Decimal:
     """Округляет денежную величину до двух знаков по правилу ROUND_HALF_UP.
@@ -112,13 +102,6 @@ def calculate_unit_price(
 ) -> PriceQuote:
     """Выбирает лучшую для покупателя цену среди применимых акций.
 
-    Применимой считается акция, чей `min_quantity` не превышает
-    заказанное количество. Проверка `is_active` и попадания в даты
-    выполняется на уровне репозитория — сюда приходят уже отобранные
-    кандидаты. При нескольких подходящих акциях выбирается та, что даёт
-    минимальную цену за единицу (то есть максимальную скидку); акции
-    никогда не суммируются.
-
     Args:
         base_price: Базовая цена товара за единицу.
         promos: Акции-кандидаты, действующие на нужный момент времени.
@@ -143,10 +126,6 @@ def calculate_unit_price(
 
 def calculate_total_price(unit_price: Decimal, quantity: int) -> Decimal:
     """Считает стоимость позиции по уже округлённой цене за единицу.
-
-    Порядок важен: сначала округляется цена за единицу, и только потом
-    она умножается на количество. Обратный порядок дал бы сумму, которую
-    покупатель не сможет получить, перемножив показанные ему числа.
 
     Args:
         unit_price: Округлённая цена за единицу.
@@ -175,14 +154,8 @@ def build_bulk_hint(promos: Sequence[Promo]) -> str | None:
 
 
 class CatalogService:
-    """Сценарии витрины: список товаров и карточка товара с ценами."""
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует сервис.
 
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._products = ProductRepository(session)
         self._promos = PromoRepository(session)
 
@@ -259,9 +232,6 @@ class CatalogService:
             Кортеж из подробного представления товара (с категорией и
             производителем) и его витринного представления с ценой.
 
-        Raises:
-            NotFoundError: Если товар не найден или скрыт с витрины
-                (сам товар, его категория или производитель неактивны).
         """
         moment = at or datetime.now(UTC)
 
@@ -281,26 +251,19 @@ class CatalogService:
         )
 
     async def quote_cart(
-    self, requested: dict[uuid.UUID, int], at: datetime | None = None
-        ) -> list[CartQuote]:
+        self, requested: dict[uuid.UUID, int], at: datetime | None = None
+    ) -> list[CartQuote]:
         """Считает цены и собирает снимок для набора «товар → количество».
 
-            Вызывается из internal-эндпоинта `/internal/stock/prices`:
-            orders_service обращается сюда перед резервом и копирует
-            результат в позиции заказа, а фронт — для превью корзины.
 
-            Остатки не меняются. Недоступный товар не прерывает расчёт —
-            на него возвращается запись с `is_available=False`, поэтому
-            вызывающая сторона может показать проблемную строку корзины.
+        Args:
+            requested: Соответствие идентификатора товара количеству.
+            at: Момент времени для проверки действия акций. По умолчанию
+                текущее время в UTC; вынесен наружу ради тестов.
 
-            Args:
-                requested: Соответствие идентификатора товара количеству.
-                at: Момент времени для проверки действия акций. По умолчанию
-                    текущее время в UTC; вынесен наружу ради тестов.
-
-            Returns:
-                По одной записи на каждый запрошенный товар, в том порядке,
-                в котором товары перечислены в `requested`.
+        Returns:
+            По одной записи на каждый запрошенный товар, в том порядке,
+            в котором товары перечислены в `requested`.
         """
         moment = at or datetime.now(UTC)
         product_ids = list(requested)

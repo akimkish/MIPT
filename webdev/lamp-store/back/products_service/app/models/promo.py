@@ -1,5 +1,3 @@
-"""ORM-модель промо-акции на товар."""
-
 import uuid
 from datetime import datetime
 from decimal import Decimal

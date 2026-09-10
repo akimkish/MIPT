@@ -1,9 +1,3 @@
-# admin_service/alembic/env.py
-"""Async-совместимый env.py для Alembic: конфиг берётся из Settings,
-метаданные — из app.db.base (моделей пока нет, но Base.metadata уже
-готов их подхватить, когда они появятся на Этапе 4).
-"""
-
 import asyncio
 from logging.config import fileConfig
 
@@ -26,13 +20,11 @@ settings = get_settings()
 
 config.set_main_option("sqlalchemy.url", str(settings.database_url))
 
-# На Этапе 4 здесь появятся Admin и AuditLog (импортом в app/db/base.py),
-# autogenerate начнёт видеть их сразу, без правок этого файла.
+
 target_metadata = Base.metadata
 
 
 def run_migrations_offline() -> None:
-    """Генерирует SQL миграций без реального подключения к БД."""
     url = config.get_main_option("sqlalchemy.url")
     context.configure(
         url=url,
@@ -46,12 +38,6 @@ def run_migrations_offline() -> None:
 
 
 def do_run_migrations(connection: Connection) -> None:
-    """Синхронная часть применения миграций, вызывается через run_sync.
-
-    Args:
-        connection: Синхронное представление соединения, которое Alembic
-            получает через AsyncConnection.run_sync().
-    """
     context.configure(connection=connection, target_metadata=target_metadata)
 
     with context.begin_transaction():
@@ -59,7 +45,6 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    """Применяет миграции к реально работающей БД через async engine."""
     connectable = async_engine_from_config(
         config.get_section(config.config_ini_section, {}),
         prefix="sqlalchemy.",

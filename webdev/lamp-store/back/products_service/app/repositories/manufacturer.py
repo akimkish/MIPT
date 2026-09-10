@@ -1,5 +1,3 @@
-"""Репозиторий доступа к таблице производителей."""
-
 import uuid
 from collections.abc import Sequence
 
@@ -10,18 +8,7 @@ from app.models.manufacturer import Manufacturer
 
 
 class ManufacturerRepository:
-    """Доступ к данным производителей.
-
-    Устроен идентично `CategoryRepository`: обе сущности — простые
-    справочники с регистронезависимой уникальностью названия.
-    """
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
 
     async def get_by_id(self, manufacturer_id: uuid.UUID) -> Manufacturer | None:

@@ -1,5 +1,3 @@
-"""Фабрики тестовых данных: создают и сохраняют ORM-объекты в сессии теста."""
-
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -54,9 +52,6 @@ async def make_product(session: AsyncSession, **overrides) -> Product:
     session.add(product)
     await session.flush()
 
-    # Явно связываем relationship-атрибуты с уже загруженными объектами —
-    # иначе последующее обращение к product.category/product.manufacturer
-    # в тестах вызовет lazy-load, а в async-режиме это MissingGreenlet.
     product.category = category
     product.manufacturer = manufacturer
     return product
@@ -81,7 +76,9 @@ async def make_promo(session: AsyncSession, *, product: Product, **overrides) ->
     return promo
 
 
-async def make_review(session: AsyncSession, *, product: Product, **overrides) -> Review:
+async def make_review(
+    session: AsyncSession, *, product: Product, **overrides
+) -> Review:
     """Создаёт и сохраняет отзыв на переданный товар."""
     defaults = {
         "product_id": product.product_id,

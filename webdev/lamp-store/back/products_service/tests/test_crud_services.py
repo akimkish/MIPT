@@ -1,5 +1,3 @@
-"""CRUD-сервисы справочников, товаров, отзывов и акций."""
-
 import uuid
 from decimal import Decimal
 
@@ -103,7 +101,9 @@ class TestProductService:
         service = ProductService(session)
 
         with pytest.raises(NotFoundError):
-            await service.update(product.product_id, ProductUpdate(category_id=uuid.uuid4()))
+            await service.update(
+                product.product_id, ProductUpdate(category_id=uuid.uuid4())
+            )
 
 
 class TestReviewService:
@@ -153,11 +153,15 @@ class TestReviewService:
             )
         )
 
-        visible, total = await service.list_for_product(product.product_id, only_approved=True)
+        visible, total = await service.list_for_product(
+            product.product_id, only_approved=True
+        )
         assert total == 0
 
         await service.set_approved(review.review_id, True)
-        visible, total = await service.list_for_product(product.product_id, only_approved=True)
+        visible, total = await service.list_for_product(
+            product.product_id, only_approved=True
+        )
         assert total == 1
 
 
@@ -168,9 +172,14 @@ class TestPromoService:
         """discount=150 валиден для fixed, но недопустим при переключении на percent."""
         product = await make_product(session)
         promo = await make_promo(
-            session, product=product, discount_type=DiscountType.FIXED.value, discount=Decimal("150")
+            session,
+            product=product,
+            discount_type=DiscountType.FIXED.value,
+            discount=Decimal("150"),
         )
         service = PromoService(session)
 
         with pytest.raises(DomainValidationError):
-            await service.update(promo.promo_id, PromoUpdate(discount_type=DiscountType.PERCENT))
+            await service.update(
+                promo.promo_id, PromoUpdate(discount_type=DiscountType.PERCENT)
+            )

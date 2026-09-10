@@ -1,5 +1,3 @@
-"""Эндпоинты аутентификации: вход и данные текущего администратора."""
-
 from fastapi import APIRouter, Depends, Request
 
 from app.api.deps import get_auth_service, get_current_admin
@@ -42,11 +40,6 @@ async def login(
     Returns:
         Access-токен и тип токена (`bearer`).
 
-    Raises:
-        AuthenticationError: Неверный email или пароль (HTTP 401).
-        AccountLockedError: Учётная запись временно заблокирована
-            (HTTP 423).
-        InactiveAccountError: Учётная запись деактивирована (HTTP 403).
     """
     return await auth_service.login(
         data.email,
@@ -60,10 +53,7 @@ async def login(
     response_model=MeResponse,
     summary="Данные текущего администратора",
     description=(
-        "Возвращает профиль администратора, выписавшего переданный "
-        "access-токен. Поля читаются из БД заново, а не берутся из "
-        "claims токена — если роль сменили после выпуска токена, "
-        "`/auth/me` вернёт актуальную."
+        "Возвращает профиль администратора, выписавшего переданный " "access-токен."
     ),
     responses={401: {"description": "Токен невалиден, просрочен или админ не найден"}},
 )

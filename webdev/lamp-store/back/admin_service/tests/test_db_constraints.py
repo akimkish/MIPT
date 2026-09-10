@@ -1,5 +1,3 @@
-"""Проверка CHECK/UNIQUE/FK ограничений на уровне БД, в обход Pydantic. Раздел 8."""
-
 import uuid
 
 import pytest

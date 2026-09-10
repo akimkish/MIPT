@@ -1,21 +1,3 @@
-# products_service/app/core/security.py
-"""Аутентификация products_service: JWT админов и service-token.
-
-Два независимых механизма, которые нельзя путать:
-
-* `require_permission` — пользовательский JWT, выпущенный admin_service.
-  Подпись проверяется локально публичным ключом (RS256), обращения
-  к admin_service по сети нет. Приватный ключ есть только у него,
-  поэтому подделать токен на стороне products_service невозможно.
-* `verify_service_token` — общий секрет для вызовов из orders_service.
-  JWT здесь неприменим: orders_service не пользователь и никакого
-  admin_id за ним не стоит.
-
-JWT-часть файла продублирована в orders_service; `verify_service_token`
-существует только здесь, потому что internal-эндпоинты есть только
-у products_service.
-"""
-
 from __future__ import annotations
 
 import base64
@@ -36,8 +18,6 @@ from app.core.permissions import Permission
 
 logger = logging.getLogger(__name__)
 
-# auto_error=False: при отсутствии заголовка FastAPI вернул бы 403 со своим
-# телом ответа, а нам нужен 401 в общем конверте {"code", "message", "details"}.
 _bearer_scheme = HTTPBearer(auto_error=False, description="JWT из admin_service")
 
 _ALGORITHM = "RS256"
@@ -94,8 +74,6 @@ def _public_key() -> str:
     Returns:
         Публичный ключ в формате PEM.
 
-    Raises:
-        ValueError: Если переменная пустая или не декодируется.
     """
     raw = Settings.JWT_PUBLIC_KEY_B64
     if not raw:
@@ -118,8 +96,6 @@ def decode_token(token: str) -> CurrentAdmin:
     Returns:
         Данные админа из claims.
 
-    Raises:
-        HTTPException: 401, если токен просрочен, подделан или неполон.
     """
     try:
         claims: dict[str, Any] = jwt.decode(
@@ -167,8 +143,6 @@ async def get_current_admin(
     Returns:
         Данные админа из токена.
 
-    Raises:
-        HTTPException: 401, если заголовка нет или токен невалиден.
     """
     if credentials is None or not credentials.credentials:
         raise _auth_error(
@@ -184,24 +158,12 @@ def require_permission(
 ) -> Callable[[CurrentAdmin], Awaitable[CurrentAdmin]]:
     """Фабрика зависимостей: требует ВСЕ перечисленные права.
 
-    Использование::
-
-        @router.post("/products", dependencies=[Depends(require_permission(
-            Permission.PRODUCTS_WRITE))])
-
-    или, если нужен сам админ в теле обработчика::
-
-        admin: CurrentAdmin = Depends(require_permission(Permission.PRODUCTS_WRITE))
-
     Args:
         *required: Права, которые обязаны присутствовать в токене одновременно.
 
     Returns:
         Асинхронную зависимость FastAPI, возвращающую CurrentAdmin.
 
-    Raises:
-        ValueError: Если фабрику вызвали без прав (ошибка программиста, видна
-            на импорте модуля, а не в рантайме).
     """
     if not required:
         raise ValueError("require_permission() needs at least one permission")
@@ -234,21 +196,9 @@ async def verify_service_token(
 ) -> None:
     """Проверяет общий секрет для вызовов из orders_service.
 
-    Зависимость вешается на роутер internal-эндпоинтов целиком, а не на
-    отдельные обработчики: так новый эндпоинт невозможно случайно
-    оставить открытым.
-
-    Сравнение через `secrets.compare_digest`, а не `==`: обычное сравнение
-    строк завершается на первом различающемся символе, и по времени ответа
-    секрет теоретически подбирается посимвольно.
-
     Args:
         x_internal_token: Значение заголовка X-Internal-Token.
 
-    Raises:
-        HTTPException: 401, если заголовок отсутствует или не совпал.
-        ValueError: Если INTERNAL_API_KEY не задан — сервис не должен
-            стартовать с открытыми internal-эндпоинтами.
     """
     expected = Settings.INTERNAL_API_KEY
     if not expected:

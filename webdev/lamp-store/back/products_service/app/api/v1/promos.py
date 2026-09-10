@@ -1,10 +1,3 @@
-"""Административные эндпоинты промо-акций.
-
-Публичного листинга акций нет: покупатель видит их влияние через
-`display_price`/`bulk_discount_hint` в карточке товара, а не список
-акций как таковой.
-"""
-
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status

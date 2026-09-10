@@ -1,5 +1,3 @@
-"""Бизнес-логика отзывов на товары."""
-
 import uuid
 from collections.abc import Sequence
 
@@ -13,14 +11,7 @@ from app.services.exceptions import ConflictError, NotFoundError
 
 
 class ReviewService:
-    """Сценарии создания, публикации и удаления отзывов."""
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует сервис.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
         self._repository = ReviewRepository(session)
         self._products = ProductRepository(session)
@@ -45,8 +36,6 @@ class ReviewService:
         Returns:
             Кортеж из списка отзывов и их общего количества.
 
-        Raises:
-            NotFoundError: Если товар не найден.
         """
         if await self._products.get_by_id(product_id) is None:
             raise NotFoundError(f"Товар {product_id} не найден")
@@ -58,18 +47,12 @@ class ReviewService:
     async def create(self, data: ReviewCreate) -> Review:
         """Создаёт отзыв со статусом «на модерации».
 
-        Отзыв не публикуется сразу: `is_approved` остаётся `False`,
-        пока модератор в admin_service не одобрит его.
-
         Args:
             data: Данные отзыва (email уже нормализован схемой).
 
         Returns:
             Созданный отзыв.
 
-        Raises:
-            NotFoundError: Если товар не найден или снят с витрины.
-            ConflictError: Если этот автор уже оставлял отзыв на товар.
         """
         product = await self._products.get_by_id(data.product_id)
         if product is None or not product.is_active:
@@ -89,9 +72,6 @@ class ReviewService:
     async def set_approved(self, review_id: uuid.UUID, is_approved: bool) -> Review:
         """Публикует отзыв или снимает его с публикации.
 
-        Единственное разрешённое изменение отзыва после создания: текст
-        и оценка неизменяемы.
-
         Args:
             review_id: Идентификатор отзыва.
             is_approved: Новое значение флага публикации.
@@ -99,8 +79,6 @@ class ReviewService:
         Returns:
             Обновлённый отзыв.
 
-        Raises:
-            NotFoundError: Если отзыв не найден.
         """
         review = await self._repository.get_by_id(review_id)
         if review is None:
@@ -112,9 +90,6 @@ class ReviewService:
 
     async def delete(self, review_id: uuid.UUID) -> None:
         """Физически удаляет отзыв.
-
-        Отзывы — единственная сущность сервиса, для которой удаление
-        разрешено: спам и оскорбления не должны оставаться в базе.
 
         Args:
             review_id: Идентификатор отзыва.

@@ -1,10 +1,3 @@
-"""Складские операции: списание и возврат остатка по заказу.
-
-Обе операции идемпотентны по `order_id`: повторный вызов после
-таймаута или ретрая со стороны orders_service не изменит остатки
-повторно (см. таблицу `stock_operations`).
-"""
-
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -24,18 +17,7 @@ from app.services.exceptions import (
 
 
 class StockService:
-    """Сценарии изменения остатков товаров под заказ.
-
-    Управляет транзакцией целиком: все позиции одного заказа списываются
-    либо все вместе, либо ни одна.
-    """
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует сервис.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
         self._products = ProductRepository(session)
         self._operations = StockOperationRepository(session)
@@ -44,12 +26,6 @@ class StockService:
         self, order_id: uuid.UUID, items: Sequence[StockItem]
     ) -> StockOperationResult:
         """Списывает остатки по всем позициям заказа в одной транзакции.
-
-        Порядок шагов: проверка идемпотентности → списание всех позиций
-        условным UPDATE → запись факта операции в журнал → commit.
-        Если хотя бы на одной позиции остатка не хватило, транзакция
-        откатывается целиком и в БД не остаётся ни списаний, ни записи
-        журнала.
 
         Args:
             order_id: Идентификатор заказа из orders_service; служит
@@ -60,10 +36,6 @@ class StockService:
             Результат операции; `already_applied=True`, если списание
             по этому заказу уже выполнялось ранее.
 
-        Raises:
-            DomainValidationError: Если список позиций пуст или один
-                товар встречается в нём несколько раз.
-            InsufficientStockError: Если товара нет или остатка не хватило.
         """
         self._validate_items(items)
 
@@ -75,9 +47,6 @@ class StockService:
                 already_applied=True,
             )
 
-        # Позиции сортируются по product_id: если два заказа списывают
-        # пересекающийся набор товаров, одинаковый порядок блокировки
-        # строк исключает взаимную блокировку (deadlock) в Postgres.
         ordered_items = sorted(items, key=lambda item: str(item.product_id))
 
         try:
@@ -100,9 +69,7 @@ class StockService:
             )
             await self._session.commit()
         except IntegrityError:
-            # Гонка: параллельный ретрай того же заказа успел вставить
-            # строку журнала первым. Его транзакция уже списала остатки,
-            # поэтому наш откат — правильный исход, а не ошибка.
+
             await self._session.rollback()
             return StockOperationResult(
                 order_id=order_id,
@@ -122,10 +89,6 @@ class StockService:
     async def release(self, order_id: uuid.UUID) -> StockOperationResult:
         """Возвращает на склад остатки, списанные ранее под заказ.
 
-        Количества берутся из снимка позиций в записи `reserve`, а не из
-        запроса: вызывающая сторона не может ошибиться и вернуть больше,
-        чем было списано.
-
         Args:
             order_id: Идентификатор заказа из orders_service.
 
@@ -133,9 +96,6 @@ class StockService:
             Результат операции; `already_applied=True`, если возврат по
             этому заказу уже выполнялся.
 
-        Raises:
-            ConflictError: Если списания по этому заказу не было — тогда
-                и возвращать нечего.
         """
         existing = await self._operations.get(order_id, StockOperationType.RELEASE)
         if existing is not None:
@@ -149,9 +109,7 @@ class StockService:
             order_id, StockOperationType.RESERVE
         )
         if reserve_record is None or not reserve_record.payload:
-            # Возвращать нечего — списания не было. Это штатный исход
-            # компенсирующего вызова, а не ошибка: orders_service шлёт
-            # release вслепую, когда исход reserve неизвестен.
+
             return StockOperationResult(
                 order_id=order_id,
                 operation=StockOperationType.RELEASE.value,
@@ -195,10 +153,7 @@ class StockService:
         Args:
             items: Позиции заказа.
 
-        Raises:
-            DomainValidationError: Если список пуст или содержит
-                повторяющиеся товары (иначе снимок в журнале не совпал
-                бы с фактически списанным количеством).
+
         """
         if not items:
             raise DomainValidationError("Список позиций не может быть пустым")

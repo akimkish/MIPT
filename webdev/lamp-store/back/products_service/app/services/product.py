@@ -1,8 +1,3 @@
-"""Бизнес-логика управления товарами (административная часть).
-
-Чтение витрины живёт в `catalog.py`; здесь — создание, изменение
-и деактивация товаров, то есть операции для админов.
-"""
 from typing import Sequence
 import uuid
 
@@ -17,14 +12,7 @@ from app.services.exceptions import ConflictError, NotFoundError
 
 
 class ProductService:
-    """Сценарии управления карточками товаров."""
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует сервис.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
         self._repository = ProductRepository(session)
         self._categories = CategoryRepository(session)
@@ -39,8 +27,6 @@ class ProductService:
         Returns:
             Найденный товар.
 
-        Raises:
-            NotFoundError: Если товар не найден.
         """
         product = await self._repository.get_by_id(product_id)
         if product is None:
@@ -49,20 +35,12 @@ class ProductService:
 
     async def create(self, data: ProductCreate) -> Product:
         """Создаёт товар.
-
-        Существование категории и производителя проверяется явно, до
-        вставки: иначе пользователь получил бы ошибку внешнего ключа
-        от БД вместо понятного сообщения.
-
         Args:
             data: Данные нового товара.
 
         Returns:
             Созданный товар.
 
-        Raises:
-            NotFoundError: Если категория или производитель не найдены.
-            ConflictError: Если артикул уже занят.
         """
         await self._ensure_references(data.category_id, data.manufacturer_id)
 
@@ -77,20 +55,13 @@ class ProductService:
     async def update(self, product_id: uuid.UUID, data: ProductUpdate) -> Product:
         """Обновляет товар.
 
-        Остаток (`quantity`) этим методом не меняется — он отсутствует
-        в схеме `ProductUpdate` и управляется только `StockService`.
-
-        Args:
+          Args:
             product_id: Идентификатор товара.
             data: Изменяемые поля.
 
         Returns:
             Обновлённый товар.
 
-        Raises:
-            NotFoundError: Если товар, категория или производитель
-                не найдены.
-            ConflictError: Если новый артикул занят другим товаром.
         """
         product = await self.get(product_id)
         values = data.model_dump(exclude_unset=True)
@@ -112,17 +83,12 @@ class ProductService:
     async def deactivate(self, product_id: uuid.UUID) -> Product:
         """Снимает товар с витрины.
 
-        Физическое удаление товаров запрещено: на них ссылаются отзывы,
-        акции и позиции заказов в orders_service.
-
         Args:
             product_id: Идентификатор товара.
 
         Returns:
             Деактивированный товар.
 
-        Raises:
-            NotFoundError: Если товар не найден.
         """
         product = await self.get(product_id)
         await self._repository.update(product, {"is_active": False})
@@ -155,10 +121,6 @@ class ProductService:
         self, *, only_active: bool = False, limit: int = 20, offset: int = 0
     ) -> tuple[Sequence[Product], int]:
         """Возвращает страницу товаров для админской панели.
-
-        В отличие от `CatalogService.list_catalog`, не считает цены с
-        учётом акций и по умолчанию показывает и неактивные товары —
-        админу нужно видеть скрытые с витрины позиции, чтобы их включить.
 
         Args:
             only_active: Ограничить выборку активными товарами.

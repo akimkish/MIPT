@@ -1,5 +1,3 @@
-"""Сборка версии API v1 admin_service из отдельных роутеров сущностей."""
-
 from fastapi import APIRouter
 
 from app.api.v1.admins import router as admins_router

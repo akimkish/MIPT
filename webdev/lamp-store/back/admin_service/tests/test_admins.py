@@ -1,5 +1,3 @@
-"""Тесты CRUD-эндпоинтов /admins. Раздел 3."""
-
 import uuid
 
 import pytest
@@ -131,7 +129,9 @@ class TestAdminsBoundaries:
         """limit=1 на последней записи не теряет и не дублирует элементы."""
         actor, _ = await create_admin(db_session, role_name=RoleName.SUPERADMIN)
         _, total_before = (
-            await client.get("/api/v1/admins?limit=1&offset=0", headers=auth_headers(actor))
+            await client.get(
+                "/api/v1/admins?limit=1&offset=0", headers=auth_headers(actor)
+            )
         ).json(), None
 
         list_response = await client.get(
@@ -153,7 +153,11 @@ class TestAdminsBoundaries:
         """Пароль ровно минимальной длины принимается, короче — 422."""
         actor, _ = await create_admin(db_session, role_name=RoleName.SUPERADMIN)
 
-        ok_payload = {**VALID_CREATE_PAYLOAD, "email": "min8@lampstore.dev", "password": "a" * 8}
+        ok_payload = {
+            **VALID_CREATE_PAYLOAD,
+            "email": "min8@lampstore.dev",
+            "password": "a" * 8,
+        }
         too_short_payload = {
             **VALID_CREATE_PAYLOAD,
             "email": "short@lampstore.dev",
@@ -292,14 +296,10 @@ class TestAdminsEdgeCases:
         assert response.json()["role_name"] == RoleName.MANAGER.value
         assert response.json()["is_active"] is True
 
-    async def test_self_deactivation_currently_allowed(self, client, db_session) -> None:
-        """Задокументированное отсутствие защиты: self-деактивация проходит.
+    async def test_self_deactivation_currently_allowed(
+        self, client, db_session
+    ) -> None:
 
-        Тест фиксирует ТЕКУЩЕЕ поведение намеренно: PROMPT_CONTEXT.md не
-        требует защиты последнего/себя самого superadmin. Если поведение
-        изменится осознанно, этот тест должен быть обновлён явно — а не
-        сломаться незаметно как побочный эффект.
-        """
         actor, _ = await create_admin(db_session, role_name=RoleName.SUPERADMIN)
 
         response = await client.delete(

@@ -1,5 +1,3 @@
-"""Публичные (витрина) и административные эндпоинты товаров."""
-
 import uuid
 from decimal import Decimal
 
@@ -81,10 +79,6 @@ async def get_product(
 ) -> ProductDetail:
     """Возвращает полную карточку товара для страницы товара.
 
-    Роутер сознательно комбинирует результаты двух сервисов (цена и
-    средний рейтинг) — это работа уровня API-композиции, а не бизнес-
-    правило, поэтому она не спрятана внутрь одного сервиса.
-
     Args:
         product_id: Идентификатор товара.
         catalog: Сервис витрины.
@@ -93,9 +87,6 @@ async def get_product(
     Returns:
         Карточку товара с ценой, связями и средним рейтингом.
 
-    Raises:
-        NotFoundError: Если товар не найден или скрыт с витрины
-            (транслируется в HTTP 404 глобальным обработчиком).
     """
     detail, catalog_item = await catalog.get_product_card(product_id)
     average_rating = await reviews.get_average_rating(product_id)
@@ -134,9 +125,7 @@ async def admin_list_products(
     )
 
 
-@admin_router.post(
-    "", response_model=ProductRead, status_code=status.HTTP_201_CREATED
-)
+@admin_router.post("", response_model=ProductRead, status_code=status.HTTP_201_CREATED)
 async def create_product(
     data: ProductCreate,
     service: ProductService = Depends(get_product_service),

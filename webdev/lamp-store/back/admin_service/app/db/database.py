@@ -1,12 +1,3 @@
-# admin_service/app/db/database.py
-"""Async-подключение к БД admin_service: engine, session maker, Depends,
-а также ожидание готовности БД при старте приложения (wait_for_db).
-
-Модуль структурно идентичен одноимённым файлам products_service и
-orders_service — общего пакета между сервисами в проекте нет (см.
-project_structure), поэтому дублирование намеренное.
-"""
-
 import asyncio
 import logging
 
@@ -28,13 +19,6 @@ class Base(DeclarativeBase):
     """Базовый класс для всех ORM-моделей admin_service."""
 
 
-# Импорт моделей — ДОЛЖЕН быть в самом низу файла, после определения Base.
-# Иначе Alembic autogenerate увидит пустую Base.metadata и предложит
-# удалить все таблицы. Циклический импорт здесь безопасен: к моменту
-# выполнения этой строки класс Base уже определён выше, так что
-# `app/models/admin.py`, делая `from app.db.base import Base`, получает
-# уже готовый объект, даже если модуль app.db.base ещё не доисполнился.
-
 logger = logging.getLogger(__name__)
 
 settings = get_settings()
@@ -53,16 +37,7 @@ async_session_factory = async_sessionmaker(
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """Отдаёт сессию БД на время обработки одного HTTP-запроса.
 
-    При исключении в обработчике делает rollback явно, не полагаясь на
-    неявное поведение `Session.close()` внутри `async with` — так
-    намерение видно прямо в коде. Закрытие сессии по завершении запроса
-    берёт на себя внешний `async with`.
-
-    Yields:
-        Открытая асинхронная сессия SQLAlchemy.
-    """
     async with async_session_factory() as session:
         try:
             yield session
@@ -72,23 +47,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def wait_for_db() -> None:
-    """Дожидается готовности БД при старте приложения, циклом с паузой.
-
-    Делает settings.db_connect_attempts попыток выполнить `SELECT 1`
-    с паузой settings.db_connect_delay секунд между ними. Каждая попытка
-    логируется с номером. Ловятся OSError и sqlalchemy.exc.DBAPIError.
-    Если после последней попытки соединение так и не удалось — падает
-    с понятным исключением.
-
-    Это тот же шаг, что и в products_service/orders_service, но здесь у
-    него дополнительная цена: пока БД недоступна, бутстрап первого админа
-    (см. app/db/base.py и стартовую логику приложения) выполнить нельзя —
-    поэтому wait_for_db обязана отработать раньше него, а не только раньше
-    Alembic.
-
-    Raises:
-        RuntimeError: Если БД не стала доступна за отведённое число попыток.
-    """
+    "Дожидается готовности БД при старте приложения, циклом с паузой."
     from sqlalchemy import text
 
     last_error: Exception | None = None

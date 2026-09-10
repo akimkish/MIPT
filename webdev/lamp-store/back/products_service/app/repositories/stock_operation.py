@@ -1,5 +1,3 @@
-"""Репозиторий журнала складских операций (идемпотентность reserve/release)."""
-
 import uuid
 from typing import Any
 
@@ -10,14 +8,7 @@ from app.models.stock_operation import StockOperation
 
 
 class StockOperationRepository:
-    """Доступ к журналу операций списания и возврата остатка."""
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
 
     async def get(
@@ -41,10 +32,6 @@ class StockOperationRepository:
         payload: dict[str, Any] | None = None,
     ) -> StockOperation:
         """Записывает факт выполнения операции в журнал.
-
-        Вставка выполняется в той же транзакции, что и сам `UPDATE`
-        остатка: либо в БД окажется и изменённое количество, и запись
-        журнала, либо ничего — иначе идемпотентность сломается.
 
         Args:
             order_id: Идентификатор заказа из orders_service.

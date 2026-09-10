@@ -1,9 +1,3 @@
-"""Конфигурация сервиса products_service.
-
-Все настройки читаются один раз из переменных окружения / .env через
-pydantic-settings и переиспользуются как синглтон (см. get_settings).
-"""
-
 from functools import lru_cache
 
 from pydantic import Field, PostgresDsn
@@ -55,13 +49,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Возвращает закешированный singleton-экземпляр Settings.
-
-    lru_cache без параметров кеширует по единственному вызову без аргументов,
-    поэтому .env читается и парсится один раз за жизнь процесса, а не на
-    каждый Depends(get_settings) в FastAPI.
-
-    Returns:
-        Единственный экземпляр Settings на процесс.
-    """
     return Settings()

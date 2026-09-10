@@ -1,5 +1,3 @@
-"""Бизнес-логика управления производителями."""
-
 import uuid
 from collections.abc import Sequence
 
@@ -12,14 +10,7 @@ from app.services.exceptions import ConflictError, NotFoundError
 
 
 class ManufacturerService:
-    """Сценарии работы с производителями каталога."""
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует сервис.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
         self._repository = ManufacturerRepository(session)
 
@@ -32,8 +23,6 @@ class ManufacturerService:
         Returns:
             Найденного производителя.
 
-        Raises:
-            NotFoundError: Если производитель не найден.
         """
         manufacturer = await self._repository.get_by_id(manufacturer_id)
         if manufacturer is None:
@@ -89,9 +78,6 @@ class ManufacturerService:
         Returns:
             Обновлённого производителя.
 
-        Raises:
-            NotFoundError: Если производитель не найден.
-            ConflictError: Если новое название занято другой записью.
         """
         manufacturer = await self.get(manufacturer_id)
         values = data.model_dump(exclude_unset=True)
@@ -115,8 +101,6 @@ class ManufacturerService:
         Returns:
             Деактивированного производителя.
 
-        Raises:
-            NotFoundError: Если производитель не найден.
         """
         manufacturer = await self.get(manufacturer_id)
         await self._repository.update(manufacturer, {"is_active": False})

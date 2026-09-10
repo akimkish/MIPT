@@ -1,5 +1,3 @@
-"""Обобщённый репозиторий с базовыми CRUD-операциями."""
-
 import uuid
 from collections.abc import Sequence
 from typing import Any, Generic, TypeVar
@@ -13,30 +11,7 @@ ModelT = TypeVar("ModelT", bound=Base)
 
 
 class BaseRepository(Generic[ModelT]):
-    """Базовый репозиторий для моделей с UUID-первичным ключом.
-
-    Инкапсулирует однотипный доступ к БД: получение по id, постраничный
-    список с фильтрами точного совпадения, создание, обновление набора
-    полей, физическое удаление. Специфичные для сущности выборки (поиск
-    по email, JOIN с другими таблицами и т.п.) описываются в наследнике
-    отдельным методом — базовый класс намеренно их не содержит, чтобы не
-    превращаться в свалку метода на каждый случай использования (см.
-    пример `ProductRepository._catalog_conditions` в products_service —
-    там сложная фильтрация тоже осталась в конкретном репозитории).
-
-    Физическое удаление (`delete`) в проекте разрешено не для всех
-    сущностей (PROMPT_CONTEXT.md → domain_decisions → «Удаление»): для
-    `admins` наследник его просто не вызывает, используя вместо этого
-    `update(..., {"is_active": False})`.
-    """
-
     def __init__(self, session: AsyncSession, model: type[ModelT]) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-            model: ORM-класс, с которым работает репозиторий.
-        """
         self._session = session
         self.model = model
 
@@ -61,12 +36,6 @@ class BaseRepository(Generic[ModelT]):
     ) -> tuple[Sequence[ModelT], int]:
         """Возвращает постраничный список записей и их общее количество.
 
-        Фильтры передаются как `поле=значение` и трактуются как точное
-        совпадение (`WHERE model.поле == значение`) — этого достаточно
-        для учебного масштаба (например, `role_name=...`,
-        `is_active=True`). Диапазоны, поиск по подстроке и JOIN остаются
-        в репозиториях конкретных сущностей.
-
         Args:
             limit: Размер страницы.
             offset: Смещение от начала выборки.
@@ -79,10 +48,6 @@ class BaseRepository(Generic[ModelT]):
             Кортеж из списка записей текущей страницы и общего
             количества записей, подходящих под фильтры (без `limit`/
             `offset`).
-
-        Raises:
-            AttributeError: Если среди `filters` указано имя, которого
-                нет в модели.
         """
         conditions = [
             getattr(self.model, field) == value for field, value in filters.items()
@@ -131,11 +96,6 @@ class BaseRepository(Generic[ModelT]):
 
     async def delete(self, entity: ModelT) -> None:
         """Физически удаляет запись.
-
-        Не вызывается для сущностей, где домен запрещает физическое
-        удаление (`admins`, `products`, `promos`) — для них есть только
-        `update(..., {"is_active": False})`. Оставлен в базовом классе
-        для сущностей, где удаление разрешено (например, `reviews`).
 
         Args:
             entity: Существующий ORM-объект для удаления.

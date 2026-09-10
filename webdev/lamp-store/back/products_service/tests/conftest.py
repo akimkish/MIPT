@@ -1,11 +1,3 @@
-"""Общие фикстуры тестов products_service.
-
-Тесты требуют реальной PostgreSQL (см. пояснение к проблеме 1: SQLite не
-поддерживает JSONB/функциональные индексы/синтаксис CHECK в нужном объёме).
-Адрес тестовой БД берётся из переменной окружения TEST_DATABASE_URL,
-по умолчанию — соседний контейнер `products_db_test` из docker-compose.
-"""
-
 import os
 from collections.abc import AsyncGenerator, Callable
 from datetime import UTC, datetime, timedelta
@@ -36,12 +28,7 @@ TEST_DATABASE_URL = os.environ.get(
 
 @pytest_asyncio.fixture(scope="session")
 async def engine() -> AsyncGenerator[AsyncEngine, None]:
-    """Создаёт схему один раз на сессию тестов, удаляет по завершении.
 
-    NullPool: тестовый engine не должен держать пул соединений между
-    тестами — каждое соединение открывается и закрывается явно фикстурой
-    `connection` ниже.
-    """
     test_engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -53,7 +40,7 @@ async def engine() -> AsyncGenerator[AsyncEngine, None]:
 
 @pytest_asyncio.fixture
 async def connection(engine: AsyncEngine) -> AsyncGenerator[AsyncConnection, None]:
-    """Отдельное соединение с открытой внешней транзакцией на один тест."""
+
     async with engine.connect() as conn:
         yield conn
 
@@ -118,9 +105,11 @@ def make_token() -> Callable[..., str]:
             "sub": sub,
             "permissions": permissions or [],
             "iat": now,
-            "exp": (now - timedelta(seconds=1))
-            if expired
-            else (now + timedelta(minutes=15)),
+            "exp": (
+                (now - timedelta(seconds=1))
+                if expired
+                else (now + timedelta(minutes=15))
+            ),
         }
         secret = "wrong-secret" if bad_secret else settings.jwt_secret
         return jwt.encode(payload, secret, algorithm=settings.jwt_algorithm)

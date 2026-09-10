@@ -1,5 +1,3 @@
-"""Репозиторий доступа к таблице администраторов."""
-
 from collections.abc import Sequence
 
 from sqlalchemy import select
@@ -11,25 +9,12 @@ from app.repositories.base import BaseRepository
 
 
 class AdminRepository(BaseRepository[Admin]):
-    """Доступ к данным администраторов.
-
-    Специфичные для `Admin` выборки — здесь; типовой CRUD — в
-    `BaseRepository`.
-    """
 
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         super().__init__(session, Admin)
 
     async def get_by_email(self, email: str) -> Admin | None:
         """Возвращает администратора по email.
-
-        Ожидает email уже в нормализованном (нижнем) регистре —
-        нормализация выполняется в сервисном слое перед вызовом.
 
         Args:
             email: Адрес почты в нижнем регистре.
@@ -57,12 +42,10 @@ class AdminRepository(BaseRepository[Admin]):
     async def exists_any(self) -> bool:
         """Проверяет, есть ли в таблице хотя бы одна запись.
 
-        Нужен при старте сервиса: первый админ создаётся только если
-        таблица пуста (PROMPT_CONTEXT.md → domain_decisions).
-
         Returns:
-            `True`, если в таблице есть хотя бы одна запись.
+            True, если в таблице есть хотя бы одна запись.
         """
         stmt = select(Admin.admin_id).limit(1)
         result = await self._session.execute(stmt)
         return result.scalar_one_or_none() is not None
+

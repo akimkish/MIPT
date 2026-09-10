@@ -1,5 +1,3 @@
-"""Репозиторий доступа к таблице товаров, включая операции с остатком."""
-
 import uuid
 from collections.abc import Sequence
 from decimal import Decimal
@@ -15,19 +13,7 @@ from app.models.product import Product
 
 
 class ProductRepository:
-    """Доступ к данным товаров каталога.
-
-    Помимо обычного CRUD содержит два метода изменения остатка
-    (`decrease_quantity` / `increase_quantity`), реализованных как
-    условный `UPDATE` без предварительного `SELECT`.
-    """
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
 
     async def get_by_id(self, product_id: uuid.UUID) -> Product | None:
@@ -44,15 +30,11 @@ class ProductRepository:
     async def get_by_id_with_relations(self, product_id: uuid.UUID) -> Product | None:
         """Возвращает товар вместе с категорией и производителем.
 
-        Связи загружаются через `selectinload` явно: в async-режиме
-        ленивая подгрузка при обращении к `product.category` вызовет
-        ошибку, поэтому всё, что нужно для ответа, грузится сразу.
-
         Args:
             product_id: Идентификатор товара.
 
         Returns:
-            Товар с загруженными связями или `None`.
+            Товар с загруженными связями или None.
         """
         stmt = (
             select(Product)
@@ -72,7 +54,7 @@ class ProductRepository:
             sku: Артикул товара.
 
         Returns:
-            Товар или `None`, если он не найден.
+            Товар или None, если он не найден.
         """
         stmt = select(Product).where(Product.sku == sku)
         result = await self._session.execute(stmt)
@@ -81,10 +63,7 @@ class ProductRepository:
     async def get_many_by_ids(
         self, product_ids: Sequence[uuid.UUID]
     ) -> Sequence[Product]:
-        """Возвращает товары по списку идентификаторов.
-
-        Нужен при резервировании остатка: сервис одним запросом получает
-        все позиции заказа вместо N отдельных обращений к БД.
+        """Возвращает товары по списку идентификаторов
 
         Args:
             product_ids: Идентификаторы искомых товаров.
@@ -112,9 +91,6 @@ class ProductRepository:
         in_stock_only: bool,
     ) -> list[ColumnElement[bool]]:
         """Собирает список условий WHERE для выборки товаров витрины.
-
-        Вынесено в отдельный метод, чтобы запрос страницы и запрос
-        `COUNT(*)` гарантированно использовали одинаковый набор фильтров.
 
         Args:
             only_active: Учитывать `is_active` товара, категории и бренда.
@@ -244,10 +220,7 @@ class ProductRepository:
     async def update(self, product: Product, values: dict[str, object]) -> Product:
         """Применяет к товару набор изменённых полей.
 
-        Изменение `quantity` этим методом не предполагается: остаток
-        меняется только `decrease_quantity` / `increase_quantity`.
-
-        Args:
+         Args:
             product: Существующий ORM-объект товара.
             values: Словарь «поле → новое значение».
 
@@ -262,11 +235,6 @@ class ProductRepository:
 
     async def decrease_quantity(self, product_id: uuid.UUID, quantity: int) -> bool:
         """Атомарно списывает остаток товара, если его достаточно.
-
-        Условие `quantity >= :n` проверяется самой БД внутри `UPDATE`,
-        поэтому между проверкой и списанием нет окна для гонки: два
-        параллельных запроса не смогут увести остаток в минус — второй
-        просто не найдёт подходящей строки.
 
         Args:
             product_id: Идентификатор товара.

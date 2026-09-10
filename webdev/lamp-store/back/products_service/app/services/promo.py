@@ -1,5 +1,3 @@
-"""Бизнес-логика управления промо-акциями."""
-
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
@@ -16,14 +14,7 @@ from app.services.exceptions import DomainValidationError, NotFoundError
 
 
 class PromoService:
-    """Сценарии управления акциями на товары."""
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует сервис.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
         self._repository = PromoRepository(session)
         self._products = ProductRepository(session)
@@ -37,8 +28,6 @@ class PromoService:
         Returns:
             Найденную акцию.
 
-        Raises:
-            NotFoundError: Если акция не найдена.
         """
         promo = await self._repository.get_by_id(promo_id)
         if promo is None:
@@ -57,9 +46,6 @@ class PromoService:
 
         Returns:
             Кортеж из списка акций и их общего количества.
-
-        Raises:
-            NotFoundError: Если товар не найден.
         """
         if await self._products.get_by_id(product_id) is None:
             raise NotFoundError(f"Товар {product_id} не найден")
@@ -72,14 +58,11 @@ class PromoService:
         """Создаёт акцию на товар.
 
         Args:
-            data: Данные новой акции (кросс-полевые проверки уже сделаны
-                валидаторами схемы `PromoCreate`).
+            data: Данные новой акции.
 
         Returns:
             Созданную акцию.
 
-        Raises:
-            NotFoundError: Если товар не найден.
         """
         if await self._products.get_by_id(data.product_id) is None:
             raise NotFoundError(f"Товар {data.product_id} не найден")
@@ -92,22 +75,13 @@ class PromoService:
     async def update(self, promo_id: uuid.UUID, data: PromoUpdate) -> Promo:
         """Обновляет акцию с проверкой согласованности полей.
 
-        Схема `PromoUpdate` не выполняет кросс-полевых проверок, потому
-        что в PATCH может прийти только одно из связанных полей. Здесь
-        изменения накладываются на уже сохранённые значения, и правила
-        проверяются на итоговом состоянии акции.
-
-        Args:
+             Args:
             promo_id: Идентификатор акции.
             data: Изменяемые поля.
 
         Returns:
             Обновлённую акцию.
 
-        Raises:
-            NotFoundError: Если акция не найдена.
-            DomainValidationError: Если итоговое состояние нарушает
-                правила (даты в обратном порядке, процент больше 100).
         """
         promo = await self.get(promo_id)
         values = data.model_dump(exclude_unset=True)
@@ -126,17 +100,12 @@ class PromoService:
     async def deactivate(self, promo_id: uuid.UUID) -> Promo:
         """Выключает акцию.
 
-        Физическое удаление акций запрещено: они нужны для разбора
-        цен в ранее оформленных заказах.
-
         Args:
             promo_id: Идентификатор акции.
 
         Returns:
             Выключенную акцию.
 
-        Raises:
-            NotFoundError: Если акция не найдена.
         """
         promo = await self.get(promo_id)
         await self._repository.update(promo, {"is_active": False})
@@ -159,9 +128,6 @@ class PromoService:
             valid_from: Начало действия акции.
             valid_to: Конец действия акции.
 
-        Raises:
-            DomainValidationError: Если процентная скидка превышает 100
-                или даты идут в обратном порядке.
         """
         if discount_type == DiscountType.PERCENT and discount > 100:
             raise DomainValidationError("Процентная скидка не может превышать 100")

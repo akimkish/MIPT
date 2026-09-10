@@ -1,5 +1,3 @@
-"""Репозиторий доступа к таблице промо-акций."""
-
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
@@ -11,20 +9,7 @@ from app.models.promo import Promo
 
 
 class PromoRepository:
-    """Доступ к данным промо-акций.
-
-    Ключевые методы — выборки *применимых* акций: они возвращают только
-    те записи, что активны и попадают в окно дат. Выбор конкретной акции
-    и расчёт цены — задача `services/catalog.py`, репозиторий лишь
-    отдаёт кандидатов.
-    """
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
 
     async def get_by_id(self, promo_id: uuid.UUID) -> Promo | None:
@@ -66,9 +51,6 @@ class PromoRepository:
     ) -> Sequence[Promo]:
         """Возвращает действующие акции сразу для списка товаров.
 
-        Нужен для витрины: без него страница из 20 товаров породила бы
-        20 отдельных запросов за акциями (классический N+1).
-
         Args:
             product_ids: Идентификаторы товаров.
             at: Момент времени, на который проверяется действие акций.
@@ -96,9 +78,6 @@ class PromoRepository:
         offset: int = 0,
     ) -> tuple[Sequence[Promo], int]:
         """Возвращает страницу всех акций товара, включая неактивные.
-
-        Используется в админской части, где нужно видеть в том числе
-        выключенные и просроченные акции.
 
         Args:
             product_id: Идентификатор товара.

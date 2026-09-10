@@ -1,5 +1,3 @@
-"""CRUD-эндпоинты управления администраторами (доступны только superadmin)."""
-
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
@@ -13,9 +11,7 @@ from app.services.admin import AdminService
 
 router = APIRouter(prefix="/admins", tags=["admins"])
 
-# Собран один раз на модуль: все эндпоинты этого роутера требуют одну
-# и ту же роль, отдельный require_role(...) на каждый маршрут был бы
-# просто повторением одного и того же вызова.
+
 _require_superadmin = require_role(RoleName.SUPERADMIN)
 
 
@@ -37,8 +33,7 @@ async def list_admins(
         service: Сервис управления администраторами.
         limit: Размер страницы.
         offset: Смещение от начала выборки.
-        _actor: Аутентифицированный superadmin — параметр нужен только
-            для проверки доступа зависимостью, в теле не используется.
+        _actor: Аутентифицированный superadmin
 
     Returns:
         Страницу администраторов с общим количеством.
@@ -69,9 +64,6 @@ async def get_admin(
 
     Returns:
         Карточка администратора.
-
-    Raises:
-        NotFoundError: Если администратор не найден (HTTP 404).
     """
     admin = await service.get(admin_id)
     return AdminRead.model_validate(admin)
@@ -94,14 +86,11 @@ async def create_admin(
     Args:
         data: Данные новой учётной записи, включая роль и пароль.
         service: Сервис управления администраторами.
-        actor: Superadmin, выполняющий создание — записывается в
-            `audit_log` как инициатор события `admin_created`.
+        actor: Superadmin, выполняющий создание
 
     Returns:
         Созданный администратор.
 
-    Raises:
-        ConflictError: Если email уже занят (HTTP 409).
     """
     admin = await service.create(data, actor=actor)
     return AdminRead.model_validate(admin)
@@ -111,10 +100,7 @@ async def create_admin(
     "/{admin_id}",
     response_model=AdminRead,
     summary="Обновить данные администратора",
-    description=(
-        "Меняет только `full_name`/`is_active`-независимые поля. Смена "
-        "роли и деактивация — отдельные аудируемые эндпоинты ниже."
-    ),
+    description=("Меняет только `full_name`/`is_active`-независимые поля."),
     responses={404: {"description": "Администратор не найден"}},
 )
 async def update_admin(
@@ -134,8 +120,6 @@ async def update_admin(
     Returns:
         Обновлённый администратор.
 
-    Raises:
-        NotFoundError: Если администратор не найден (HTTP 404).
     """
     admin = await service.update(admin_id, data)
     return AdminRead.model_validate(admin)
@@ -146,10 +130,9 @@ async def update_admin(
     response_model=AdminRead,
     summary="Деактивировать администратора",
     description=(
-        "Физическое удаление запрещено доменом — только `is_active=false`. "
+        "Физическое удаление запрещено  — только `is_active=false`. "
         "Уже выданный токен деактивированного администратора остаётся "
-        "валиден до истечения TTL (осознанное упрощение проекта, "
-        "денилиста токенов нет)."
+        "валиден до истечения TTL."
     ),
     responses={404: {"description": "Администратор не найден"}},
 )
@@ -163,14 +146,11 @@ async def deactivate_admin(
     Args:
         admin_id: Идентификатор администратора.
         service: Сервис управления администраторами.
-        actor: Superadmin, выполняющий деактивацию — записывается в
-            `audit_log` как инициатор события `admin_deactivated`.
+        actor: Superadmin, выполняющий деактивацию
 
     Returns:
         Деактивированный администратор.
 
-    Raises:
-        NotFoundError: Если администратор не найден (HTTP 404).
     """
     admin = await service.deactivate(admin_id, actor=actor)
     return AdminRead.model_validate(admin)
@@ -195,14 +175,11 @@ async def change_admin_role(
         admin_id: Идентификатор администратора, чья роль меняется.
         data: Новая роль.
         service: Сервис управления администраторами.
-        actor: Superadmin, выполняющий смену роли — записывается в
-            `audit_log` вместе со старым и новым значением роли.
+        actor: Superadmin, выполняющий смену роли
 
     Returns:
         Администратор с обновлённой ролью.
 
-    Raises:
-        NotFoundError: Если администратор не найден (HTTP 404).
     """
     admin = await service.change_role(admin_id, data.new_role, actor=actor)
     return AdminRead.model_validate(admin)

@@ -1,0 +1,30 @@
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4);
+}
+
+.heading {
+  margin: 0 0 var(--space-6);
+  font-size: 1.75rem;
+  color: var(--color-text);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.status,
+.empty {
+  color: var(--color-text-muted);
+  padding: var(--space-6) 0;
+  text-align: center;
+}
+
+.error {
+  color: var(--color-danger);
+  padding: var(--space-6) 0;
+  text-align: center;
+}

@@ -1,5 +1,3 @@
-"""Тесты GET /auth/me. Раздел 2."""
-
 from datetime import timedelta
 
 import pytest
@@ -57,12 +55,7 @@ class TestMeBoundaries:
     async def test_just_expired_token_rejected(
         self, client, db_session, make_token
     ) -> None:
-        """Токен, просроченный дальше допуска leeway (10 с), отклоняется.
 
-        exp_delta ниже выбран заведомо больше leeway=10 секунд из
-        auth_contract — иначе тест путает «токен истёк» с «токен внутри
-        допуска на расхождение часов», который отклонять не должен.
-        """
         admin, _ = await create_admin(db_session)
         token = make_token(admin, exp_delta=timedelta(seconds=-15))
 

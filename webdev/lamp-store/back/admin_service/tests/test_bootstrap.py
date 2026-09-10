@@ -1,5 +1,3 @@
-"""Тесты bootstrap первого администратора. Раздел 5."""
-
 import asyncio
 
 import pytest
@@ -40,12 +38,7 @@ class TestBootstrapFirstAdmin:
     async def test_concurrent_bootstrap_creates_exactly_one_admin(
         self, test_engine
     ) -> None:
-        """Гонка: два параллельных bootstrap на пустой таблице -> ровно одна запись.
-
-        Использует отдельные соединения/сессии (не общий db_session
-        фикстуры) — гонка должна проявиться на уровне реальной БД, а не
-        внутри одной последовательной SAVEPOINT-сессии.
-        """
+        """Гонка: два параллельных bootstrap на пустой таблице -> ровно одна запись."""
         from sqlalchemy.ext.asyncio import async_sessionmaker
 
         session_factory = async_sessionmaker(bind=test_engine, expire_on_commit=False)
@@ -53,7 +46,7 @@ class TestBootstrapFirstAdmin:
         async def _bootstrap() -> None:
             async with session_factory() as session:
                 await AdminService(session).bootstrap_first_admin(
-                "race@lampstore.dev", "race-pass"
+                    "race@lampstore.dev", "race-pass"
                 )
 
         await asyncio.gather(_bootstrap(), _bootstrap())
@@ -64,9 +57,6 @@ class TestBootstrapFirstAdmin:
 
         assert len(admins) == 1
 
-        # Уборка за собой: этот тест сознательно пишет в ту же test_engine
-        # БД мимо транзакции db_session, поэтому откатывать за собой
-        # нужно вручную, иначе следующий тест увидит лишнего админа.
         async with session_factory() as session:
             await session.execute(Admin.__table__.delete())
             await session.commit()

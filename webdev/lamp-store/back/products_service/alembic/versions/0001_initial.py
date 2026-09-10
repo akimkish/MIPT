@@ -1,21 +1,3 @@
-"""Initial schema for products_service: categories, manufacturers, products,
-reviews, promos, stock_operations.
-
-Revision ID: 0001
-Revises:
-Create Date: 2026-09-08
-
-Схема соответствует моделям в app/models/ и db_schema из PROMPT_CONTEXT.md.
-NAMING_CONVENTION в проекте не используется (сознательно исключена ранее в
-этой сессии), поэтому имена ограничений заданы явно там, где это уже было
-зафиксировано в моделях (CheckConstraint/UniqueConstraint/Index с name=...);
-для PK/FK/UNIQUE(sku) имена оставлены на усмотрение PostgreSQL по умолчанию.
-
-Функциональные уникальные индексы по lower(name) для categories/manufacturers
-создаются через raw SQL (op.execute), поскольку Alembic op.create_index не
-имеет прямой поддержки индексов по выражению — только по именам колонок.
-"""
-
 from collections.abc import Sequence
 
 import sqlalchemy as sa

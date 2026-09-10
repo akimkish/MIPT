@@ -1,5 +1,3 @@
-"""Сборка всех роутеров v1 в один объект для подключения в `main.py`."""
-
 from fastapi import APIRouter
 
 from app.api.v1 import categories, internal, manufacturers, products, promos, reviews

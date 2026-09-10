@@ -1,5 +1,3 @@
-"""Публичные и административные эндпоинты отзывов."""
-
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status
@@ -33,8 +31,6 @@ async def list_reviews(
     Returns:
         Страницу отзывов с общим количеством.
 
-    Raises:
-        NotFoundError: Если товар не найден (транслируется в 404).
     """
     items, total = await service.list_for_product(
         product_id, only_approved=True, limit=limit, offset=offset
@@ -61,10 +57,6 @@ async def create_review(
     Returns:
         Созданный отзыв со статусом «на модерации».
 
-    Raises:
-        NotFoundError: Если товар не найден или скрыт с витрины.
-        ConflictError: Если автор уже оставлял отзыв на этот товар.
-        DomainValidationError: Если `product_id` в пути и в теле не совпадают.
     """
     if data.product_id != product_id:
         from app.services.exceptions import DomainValidationError

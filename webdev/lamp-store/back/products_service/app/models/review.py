@@ -1,5 +1,3 @@
-"""ORM-модель отзыва на товар."""
-
 import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -26,11 +24,6 @@ if TYPE_CHECKING:
 
 class Review(Base):
     """Отзыв покупателя на товар.
-
-    Отзыв неизменяем после создания (нет `updated_at`, эндпоинта
-    редактирования быть не должно). Если отзыв нужно скорректировать —
-    единственные операции: физическое удаление (разрешено только для
-    этой сущности) либо снятие с публикации через `is_approved=False`.
 
     Attributes:
         review_id: Первичный ключ (UUID4), генерируется в Python.

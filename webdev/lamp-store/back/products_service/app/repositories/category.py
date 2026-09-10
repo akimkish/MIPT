@@ -1,5 +1,3 @@
-"""Репозиторий доступа к таблице категорий."""
-
 import uuid
 from collections.abc import Sequence
 
@@ -10,19 +8,7 @@ from app.models.category import Category
 
 
 class CategoryRepository:
-    """Доступ к данным категорий товаров.
-
-    Репозиторий не вызывает `commit()`: границы транзакции определяет
-    сервисный слой (см. пояснения к слою). Для получения сгенерированных
-    БД значений используется `flush()`.
-    """
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
 
     async def get_by_id(self, category_id: uuid.UUID) -> Category | None:
@@ -39,14 +25,11 @@ class CategoryRepository:
     async def get_by_name(self, name: str) -> Category | None:
         """Возвращает категорию по названию без учёта регистра.
 
-        Сравнение через `lower(name)` соответствует уникальному
-        функциональному индексу в БД, поэтому запрос использует индекс.
-
         Args:
             name: Название категории в любом регистре.
 
         Returns:
-            Категорию или `None`, если она не найдена.
+            Категорию или None, если она не найдена.
         """
         stmt = select(Category).where(func.lower(Category.name) == name.lower())
         result = await self._session.execute(stmt)

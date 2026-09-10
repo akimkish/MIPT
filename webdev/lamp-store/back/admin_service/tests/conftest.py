@@ -1,13 +1,3 @@
-"""Общие фикстуры тестов admin_service.
-
-Изоляция тестов: одно соединение на тест, внешняя транзакция + SAVEPOINT,
-который автоматически перезапускается после любого commit()/rollback()
-сервисного кода (событие after_transaction_end). Это позволяет сервисам
-свободно вызывать session.commit() как в проде, но всё, что накопилось
-за тест, откатывается целиком в teardown — без ручной чистки таблиц
-между тестами и без гонок между параллельными тестовыми БД.
-"""
-
 import os
 from collections.abc import AsyncIterator
 from datetime import datetime, timedelta, timezone
@@ -43,12 +33,7 @@ TEST_DATABASE_URL = os.environ.get(
 
 @pytest_asyncio.fixture(scope="session")
 async def test_engine() -> AsyncIterator[AsyncEngine]:
-    """Создаёт движок тестовой БД и пересобирает схему один раз на сессию.
-
-    `NullPool`: без пула соединений — каждое соединение в тестах открывается
-    и закрывается явно фикстурой `db_session`, общий пул тут только мешал бы
-    отследить утечки соединений между тестами.
-    """
+    """Создаёт движок тестовой БД и пересобирает схему один раз на сессию."""
     engine = create_async_engine(TEST_DATABASE_URL, poolclass=NullPool)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -59,15 +44,7 @@ async def test_engine() -> AsyncIterator[AsyncEngine]:
 
 @pytest_asyncio.fixture
 async def db_session(test_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
-    """Даёт сессию, привязанную к одной внешней транзакции с откатом.
-
-    Ключевой момент: слушатель `after_transaction_end` перезапускает
-    SAVEPOINT каждый раз, когда текущая вложенная транзакция завершается
-    (в том числе из-за `session.commit()` внутри сервисного кода или
-    из-за ROLLBACK после ошибки уровня БД, например нарушения CHECK).
-    Без этого второй `commit()` в рамках теста закоммитил бы данные
-    в реальную БД мимо отката.
-    """
+    """Даёт сессию, привязанную к одной внешней транзакции с откатом."""
     connection = await test_engine.connect()
     outer_transaction = await connection.begin()
 
@@ -125,11 +102,7 @@ def wrong_rsa_keypair() -> tuple[str, str]:
 
 @pytest.fixture(autouse=True, scope="session")
 def _configure_jwt_settings(rsa_keypair: tuple[str, str]) -> None:
-    """Подменяет ключи и параметры JWT в settings на тестовые.
-
-    autouse — иначе любой тест, использующий /auth/*, падал бы с ошибкой
-    чтения несуществующих боевых ключей из окружения.
-    """
+    """Подменяет ключи и параметры JWT в settings на тестовые."""
     private_pem, public_pem = rsa_keypair
     Settings.jwt_private_key = private_pem
     Settings.jwt_public_key = public_pem
@@ -141,13 +114,7 @@ def _configure_jwt_settings(rsa_keypair: tuple[str, str]) -> None:
 
 @pytest.fixture
 def make_token(rsa_keypair: tuple[str, str]):
-    """Возвращает фабрику JWT для прямого конструирования «плохих» токенов.
-
-    В отличие от `create_access_token` из `core/security.py`, позволяет
-    задать неверный `iss`/`aud`, просроченный `exp`, чужую подпись или
-    пропустить обязательный claim — то есть собрать именно те токены,
-    которые в норме сервис никогда сам не выпустит, но обязан отклонить.
-    """
+    """Возвращает фабрику JWT для прямого конструирования «плохих» токенов."""
     default_private_key, _ = rsa_keypair
 
     def _make_token(
@@ -187,11 +154,7 @@ def make_token(rsa_keypair: tuple[str, str]):
 
 @pytest_asyncio.fixture
 async def app(db_session: AsyncSession):
-    """Приложение с подменённой зависимостью сессии БД на тестовую.
-
-    Все запросы одного теста используют один и тот же `db_session` —
-    см. пояснение в шапке файла про паттерн изоляции.
-    """
+    """Приложение с подменённой зависимостью сессии БД на тестовую."""
 
     async def _override_get_session() -> AsyncIterator[AsyncSession]:
         yield db_session

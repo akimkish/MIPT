@@ -1,5 +1,3 @@
-"""Юнит-тесты хеширования паролей и JWT (core/security.py). Раздел 6."""
-
 import uuid
 from datetime import timedelta
 
@@ -15,6 +13,7 @@ from app.models.enums import RoleName
 from app.services.exceptions import AuthenticationError
 from tests.factories import build_admin
 import jwt
+
 
 class TestPasswordHashing:
     """Хеширование и проверка паролей."""
@@ -77,11 +76,7 @@ class TestAccessToken:
             decode_access_token(token)
 
     def test_wrong_signature_rejected(self, make_token, wrong_rsa_keypair) -> None:
-        """Токен, подписанный чужим приватным ключом, отклоняется.
-
-        Критичный тест: проверяет, что проверка подписи реально работает,
-        а не пропускает валидный по структуре, но неавторизованный токен.
-        """
+        """Токен, подписанный чужим приватным ключом, отклоняется."""
         wrong_private_key, _ = wrong_rsa_keypair
         admin = build_admin()
         admin.admin_id = uuid.uuid4()
@@ -102,7 +97,5 @@ class TestAccessToken:
         token = make_token(admin, omit_claims=("role",))
 
         with pytest.raises((AuthenticationError, KeyError)):
-            # KeyError допускается только как задокументированный текущий
-            # результат, если TokenPayload ещё не обёрнут в try/except —
-            # но правильное поведение обязано быть AuthenticationError.
+
             decode_access_token(token)

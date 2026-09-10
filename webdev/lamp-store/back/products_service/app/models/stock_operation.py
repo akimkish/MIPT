@@ -1,5 +1,3 @@
-"""ORM-модель журнала складских операций (идемпотентность reserve/release)."""
-
 import uuid
 from datetime import datetime
 
@@ -15,22 +13,13 @@ from app.models.enums import StockOperationType
 class StockOperation(Base):
     """Запись о списании (`reserve`) или возврате (`release`) остатка по заказу.
 
-    Составной первичный ключ `(order_id, operation)` — это и есть механизм
-    идемпотентности: перед списанием/возвратом сервис проверяет наличие
-    строки с таким `order_id` и `operation`; если она уже есть, операция
-    не повторяется (важно при ретраях между сервисами).
-
-    `order_id` приходит из orders_service и намеренно не имеет FK — это две
-    разные базы данных, внешний ключ между ними технически невозможен;
-    целостность обеспечивается на уровне бизнес-логики, а не БД.
-
     Attributes:
-        order_id: Идентификатор заказа из orders_service.
-        operation: `reserve` или `release`.
-        payload: Снимок позиций заказа на момент операции (список пар
-            `product_id`/`quantity`). Для `reserve` используется затем как
-            источник данных для корректного `release` при отмене заказа.
-        created_at: Момент записи операции.
+     order_id: Идентификатор заказа из orders_service.
+     operation: `reserve` или `release`.
+     payload: Снимок позиций заказа на момент операции (список пар
+         `product_id`/`quantity`). Для `reserve` используется затем как
+         источник данных для корректного `release` при отмене заказа.
+     created_at: Момент записи операции.
     """
 
     __tablename__ = "stock_operations"

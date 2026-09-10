@@ -1,15 +1,9 @@
-# admin_service/app/core/config.py
-"""Конфигурация сервиса admin_service.
-
-Все настройки читаются один раз из переменных окружения / .env через
-pydantic-settings и переиспользуются как синглтон (см. get_settings).
-"""
-
 from functools import lru_cache
 
 from pydantic import EmailStr, Field, PostgresDsn
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import base64
+
 
 class Settings(BaseSettings):
     """Настройки admin_service, читаемые из окружения.
@@ -51,29 +45,23 @@ class Settings(BaseSettings):
     jwt_public_key_b64: str = Field(alias="JWT_PUBLIC_KEY_B64")
     first_admin_email: str = Field(alias="FIRST_ADMIN_EMAIL")
     first_admin_password: str = Field(alias="FIRST_ADMIN_PASSWORD")
+    first_admin_name: str = Field(alias="FIRST_ADMIN_NAME")
 
     # Необязательные — с дефолтами.
     jwt_algorithm: str = Field(default="RS256", alias="JWT_ALGORITHM")
     jwt_issuer: str = Field(default="admin_service", alias="JWT_ISSUER")
     jwt_audience: str = Field(default="lamp-store", alias="JWT_AUDIENCE")
     jwt_leeway_seconds: int = Field(default=10, alias="JWT_LEEWAY_SECONDS")
-    access_token_ttl_minutes: int = Field(
-        default=30, alias="ACCESS_TOKEN_TTL_MINUTES"
-    )
+    access_token_ttl_minutes: int = Field(default=30, alias="ACCESS_TOKEN_TTL_MINUTES")
 
-    max_failed_login_attempts: int = Field(
-        default=5, alias="MAX_FAILED_LOGIN_ATTEMPTS"
-    )
-    lockout_duration_minutes: int = Field(
-        default=15, alias="LOCKOUT_DURATION_MINUTES"
-    )
+    max_failed_login_attempts: int = Field(default=5, alias="MAX_FAILED_LOGIN_ATTEMPTS")
+    lockout_duration_minutes: int = Field(default=15, alias="LOCKOUT_DURATION_MINUTES")
 
     app_port: int = Field(default=8003, alias="APP_PORT")
     log_level: str = Field(default="INFO", alias="LOG_LEVEL")
 
     db_connect_attempts: int = Field(default=10, alias="DB_CONNECT_ATTEMPTS")
     db_connect_delay: float = Field(default=1.0, alias="DB_CONNECT_DELAY")
-
 
     @property
     def jwt_private_key(self) -> str:
@@ -92,6 +80,8 @@ class Settings(BaseSettings):
             PEM-представление публичного ключа с переносами строк.
         """
         return base64.b64decode(self.jwt_public_key_b64).decode("utf-8")
+
+
 @lru_cache
 def get_settings() -> Settings:
     """Возвращает закешированный singleton-экземпляр Settings.

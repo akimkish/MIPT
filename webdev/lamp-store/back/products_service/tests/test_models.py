@@ -1,5 +1,3 @@
-"""Тесты ограничений уровня БД: CHECK, UNIQUE, ON DELETE RESTRICT, составной PK."""
-
 import uuid
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
@@ -88,7 +86,9 @@ class TestReviewChecks:
 class TestPromoChecks:
     """CHECK-ограничения таблицы promos."""
 
-    async def test_percent_discount_boundary_100_ok(self, session: AsyncSession) -> None:
+    async def test_percent_discount_boundary_100_ok(
+        self, session: AsyncSession
+    ) -> None:
         from tests.factories import make_promo
 
         product = await make_product(session)
@@ -168,11 +168,15 @@ class TestStockOperationCompositeKey:
     ) -> None:
         order_id = uuid.uuid4()
         session.add(
-            StockOperation(order_id=order_id, operation=StockOperationType.RESERVE.value)
+            StockOperation(
+                order_id=order_id, operation=StockOperationType.RESERVE.value
+            )
         )
         await session.flush()
         session.add(
-            StockOperation(order_id=order_id, operation=StockOperationType.RESERVE.value)
+            StockOperation(
+                order_id=order_id, operation=StockOperationType.RESERVE.value
+            )
         )
         with pytest.raises(IntegrityError):
             await session.flush()
@@ -183,9 +187,13 @@ class TestStockOperationCompositeKey:
         """Разные operation — разные строки, PK не конфликтует."""
         order_id = uuid.uuid4()
         session.add(
-            StockOperation(order_id=order_id, operation=StockOperationType.RESERVE.value)
+            StockOperation(
+                order_id=order_id, operation=StockOperationType.RESERVE.value
+            )
         )
         session.add(
-            StockOperation(order_id=order_id, operation=StockOperationType.RELEASE.value)
+            StockOperation(
+                order_id=order_id, operation=StockOperationType.RELEASE.value
+            )
         )
         await session.flush()

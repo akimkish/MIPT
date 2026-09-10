@@ -1,5 +1,3 @@
-"""Публичные и административные эндпоинты категорий."""
-
 import uuid
 
 from fastapi import APIRouter, Depends, Query, status

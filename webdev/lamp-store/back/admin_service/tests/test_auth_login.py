@@ -1,5 +1,3 @@
-"""Тесты POST /auth/login. Раздел 1."""
-
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -41,9 +39,7 @@ class TestLoginHappyPath:
         self, client, db_session
     ) -> None:
         """Успешный вход сбрасывает счётчик неудачных попыток и last_login."""
-        admin, password = await create_admin(
-            db_session, failed_login_attempts=3
-        )
+        admin, password = await create_admin(db_session, failed_login_attempts=3)
 
         response = await client.post(
             "/api/v1/auth/login", json={"email": admin.email, "password": password}
@@ -71,22 +67,18 @@ class TestLoginHappyPath:
 
 @pytest.mark.asyncio
 class TestLoginLockout:
-    async def test_attempt_before_threshold_not_locked(self, client, db_session) -> None:
+    async def test_attempt_before_threshold_not_locked(
+        self, client, db_session
+    ) -> None:
         """MAX-1 неудачных попыток — учётка ещё не заблокирована."""
         admin, password = await create_admin(
             db_session, failed_login_attempts=MAX_FAILED_LOGIN_ATTEMPTS - 1
         )
 
-        # Одна дополнительная неверная попытка доводит счётчик ровно до MAX.
         wrong = await client.post(
             "/api/v1/auth/login", json={"email": admin.email, "password": "wrong"}
         )
         assert wrong.status_code == 401
-
-        # Следующий верный пароль всё ещё должен пройти -> учётка
-        # заблокировалась только что и разблокируется по locked_until в
-        # будущем, но саму последнюю удачную попытку до дедлайна тест не
-        # проверяет здесь: см. test_locked_account_rejects_correct_password.
 
     async def test_threshold_attempt_locks_account(self, client, db_session) -> None:
         """Ровно N-я неудачная попытка блокирует учётку -> 423."""
@@ -166,7 +158,9 @@ class TestLoginEdgeCases:
             e.action == AuditAction.LOGIN_FAILED.value for e in result.scalars().all()
         )
 
-    async def test_unknown_email_logs_without_admin_id(self, client, db_session) -> None:
+    async def test_unknown_email_logs_without_admin_id(
+        self, client, db_session
+    ) -> None:
         """Несуществующий email -> в audit_log admin_id=NULL, actor_email сохранён."""
         await client.post(
             "/api/v1/auth/login",

@@ -1,5 +1,3 @@
-"""Тесты ценообразования и витрины. Предполагает применённый фикс из проблемы 3."""
-
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
@@ -90,10 +88,16 @@ class TestCalculateUnitPrice:
         from app.models.promo import Promo
 
         promo = Promo(
-            discount_type=DiscountType.PERCENT.value, discount=Decimal("10"), min_quantity=3
+            discount_type=DiscountType.PERCENT.value,
+            discount=Decimal("10"),
+            min_quantity=3,
         )
-        quote_at_threshold = calculate_unit_price(Decimal("100.00"), [promo], quantity=3)
-        quote_below_threshold = calculate_unit_price(Decimal("100.00"), [promo], quantity=2)
+        quote_at_threshold = calculate_unit_price(
+            Decimal("100.00"), [promo], quantity=3
+        )
+        quote_below_threshold = calculate_unit_price(
+            Decimal("100.00"), [promo], quantity=2
+        )
 
         assert quote_at_threshold.unit_price == Decimal("90.00")
         assert quote_below_threshold.unit_price == Decimal("100.00")
@@ -122,7 +126,12 @@ class TestCatalogServiceCard:
         self, session: AsyncSession
     ) -> None:
         product = await make_product(session, price=Decimal("200.00"))
-        await make_promo(session, product=product, discount=Decimal("50"), discount_type=DiscountType.FIXED.value)
+        await make_promo(
+            session,
+            product=product,
+            discount=Decimal("50"),
+            discount_type=DiscountType.FIXED.value,
+        )
         service = CatalogService(session)
 
         _, catalog_item = await service.get_product_card(product.product_id)

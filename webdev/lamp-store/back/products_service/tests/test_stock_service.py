@@ -1,5 +1,3 @@
-"""Тесты складских операций: reserve/release, идемпотентность, атомарность."""
-
 import asyncio
 import uuid
 from decimal import Decimal
@@ -125,9 +123,6 @@ class TestReservePartialFailureAtomicity:
                 ],
             )
 
-        # rollback() внутри reserve() истёк оба объекта в сессии — освежаем явно,
-        # иначе последующий доступ к .quantity вызовет тот же MissingGreenlet,
-        # что и в Причине A (lazy-refresh истёкшего атрибута вне await-контекста).
         await session.refresh(enough)
         await session.refresh(not_enough)
         assert enough.quantity == 10

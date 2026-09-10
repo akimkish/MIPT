@@ -1,5 +1,3 @@
-"""Репозиторий доступа к таблице отзывов."""
-
 import uuid
 from collections.abc import Sequence
 
@@ -10,19 +8,7 @@ from app.models.review import Review
 
 
 class ReviewRepository:
-    """Доступ к данным отзывов на товары.
-
-    Единственная сущность сервиса, для которой разрешено физическое
-    удаление (модерация), и единственная без метода обновления
-    содержимого: отзыв неизменяем, меняется только флаг `is_approved`.
-    """
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
 
     async def get_by_id(self, review_id: uuid.UUID) -> Review | None:
@@ -40,9 +26,6 @@ class ReviewRepository:
         self, product_id: uuid.UUID, user_email: str
     ) -> Review | None:
         """Ищет отзыв конкретного автора на конкретный товар.
-
-        Нужен для дружелюбной проверки повторного отзыва до вставки —
-        иначе пользователь получит ошибку UNIQUE-ограничения.
 
         Args:
             product_id: Идентификатор товара.

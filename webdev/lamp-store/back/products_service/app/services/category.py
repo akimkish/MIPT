@@ -1,5 +1,3 @@
-"""Бизнес-логика управления категориями товаров."""
-
 import uuid
 from collections.abc import Sequence
 
@@ -12,14 +10,7 @@ from app.services.exceptions import ConflictError, NotFoundError
 
 
 class CategoryService:
-    """Сценарии работы с категориями каталога."""
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует сервис.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         self._session = session
         self._repository = CategoryRepository(session)
 
@@ -31,9 +22,6 @@ class CategoryService:
 
         Returns:
             Найденную категорию.
-
-        Raises:
-            NotFoundError: Если категория не найдена.
         """
         category = await self._repository.get_by_id(category_id)
         if category is None:
@@ -66,9 +54,6 @@ class CategoryService:
         Returns:
             Созданную категорию.
 
-        Raises:
-            ConflictError: Если категория с таким названием уже есть
-                (сравнение без учёта регистра).
         """
         if await self._repository.get_by_name(data.name) is not None:
             raise ConflictError(f"Категория «{data.name}» уже существует")
@@ -88,9 +73,6 @@ class CategoryService:
         Returns:
             Обновлённую категорию.
 
-        Raises:
-            NotFoundError: Если категория не найдена.
-            ConflictError: Если новое название занято другой категорией.
         """
         category = await self.get(category_id)
         values = data.model_dump(exclude_unset=True)
@@ -108,18 +90,12 @@ class CategoryService:
     async def deactivate(self, category_id: uuid.UUID) -> Category:
         """Скрывает категорию с витрины.
 
-        Физическое удаление категорий запрещено доменными правилами:
-        на них ссылаются товары через `ON DELETE RESTRICT`, а старые
-        записи должны оставаться читаемыми.
-
-        Args:
+           Args:
             category_id: Идентификатор категории.
 
         Returns:
             Деактивированную категорию.
 
-        Raises:
-            NotFoundError: Если категория не найдена.
         """
         category = await self.get(category_id)
         await self._repository.update(category, {"is_active": False})

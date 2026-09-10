@@ -1,15 +1,3 @@
-# docker-compose.yml
-# Единый compose-файл для трёх сервисов lamp-store и их баз данных.
-#
-# Три отдельных контейнера Postgres (а не один Postgres с тремя базами):
-# так зафиксировано в PROMPT_CONTEXT.md — независимость баз соответствует
-# независимости сервисов, рестарт БД одного сервиса не задевает остальные.
-#
-# depends_on намеренно без condition: service_healthy и без healthcheck —
-# порядок старта контейнеров важен (БД должна быть создана раньше, чем
-# приложение попробует к ней подключиться), но готовность самой БД к работе
-# проверяет wait_for_db() внутри приложения (entrypoint.sh), а не Docker.
-
 networks:
   lamp-network:
     name: ${COMPOSE_PROJECT_NAME:-lamp-store}-network
@@ -31,8 +19,6 @@ services:
     networks:
       - lamp-network
     ports:
-      # Только для локального psql/DBeaver с хоста; сервисы внутри сети
-      # обращаются к БД по имени контейнера и порту 5432.
       - "${PRODUCTS_DB_HOST_PORT:-5433}:5432"
 
   products_db_test:
@@ -99,9 +85,6 @@ services:
     networks:
       - lamp-network
     ports:
-      # Порт контейнера (справа) задан явно и должен совпадать с APP_PORT
-      # в products_service/.env — Compose не подставит его сюда сам,
-      # т.к. интерполяция ${VAR} видит только корневой .env, не env_file.
       - "${PRODUCTS_SERVICE_HOST_PORT:-8001}:8001"
     restart: unless-stopped
 

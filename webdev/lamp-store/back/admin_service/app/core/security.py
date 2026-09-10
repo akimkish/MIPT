@@ -1,13 +1,3 @@
-"""Хеширование паролей и работа с JWT-токенами.
-
-Формат токена соответствует INTEGRATION_CONTRACT.md → auth_contract:
-`permissions` собирается при выпуске токена из
-`core/roles.py:ROLE_PERMISSIONS[role_name]`. products_service и
-orders_service сравнивают эти строки со своими константами `Permission`
-и ничего не знают про роли — появление новой роли требует правки только
-`RoleName` + CHECK-ограничения + `ROLE_PERMISSIONS`, без изменений в
-других сервисах.
-"""
 from app.core.roles import get_permissions_for_role
 
 import uuid
@@ -32,8 +22,7 @@ class TokenPayload(BaseModel):
         admin_id: Идентификатор администратора (`sub` токена).
         email: Email администратора на момент выпуска токена.
         role_name: Роль администратора на момент выпуска токена.
-        jti: Идентификатор токена. Не используется для денилиста сейчас
-            (см. security-чек-лист), но формат заложен на будущее.
+        jti: Идентификатор токена.
     """
 
     admin_id: uuid.UUID
@@ -60,16 +49,12 @@ def hash_password(plain_password: str) -> str:
 def verify_password(plain_password: str, password_hash: str) -> bool:
     """Проверяет пароль против сохранённого bcrypt-хеша.
 
-    `bcrypt.checkpw` сравнивает хеши за постоянное время — защита от
-    timing-атак заложена в саму библиотеку, отдельно реализовывать
-    константное сравнение не нужно.
-
     Args:
         plain_password: Пароль в открытом виде из формы входа.
         password_hash: Хеш из `admins.password_hash`.
 
     Returns:
-        `True`, если пароль совпадает с хешем.
+        True, если пароль совпадает с хешем.
     """
     return bcrypt.checkpw(plain_password.encode("utf-8"), password_hash.encode("utf-8"))
 
@@ -77,10 +62,7 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
 def create_access_token(admin: Admin) -> str:
     """Выпускает access-токен для администратора.
 
-    Refresh-токена нет: срок жизни токена (`settings.jwt_ttl_minutes`,
-    по контракту 30 минут) — единственная граница действия выданных
-    прав. Осознанное упрощение уровня учебного проекта, подробнее — в
-    security-чек-листе в конце ответа.
+    Refresh-токена нет: срок жизни токена (`settings.jwt_ttl_minutes`, 30 минут)
 
     Args:
         admin: Администратор, для которого выпускается токен.
@@ -110,20 +92,12 @@ def create_access_token(admin: Admin) -> str:
 def decode_access_token(token: str) -> TokenPayload:
     """Валидирует и разбирает access-токен.
 
-    Проверяются подпись, `exp`, `iss`, `aud` (штатная проверка PyJWT,
-    допуск на расхождение часов — `leeway=10`, как в
-    INTEGRATION_CONTRACT.md → auth_contract). `permissions` в payload
-    сейчас нет — см. модульный докстринг.
-
     Args:
         token: JWT из заголовка `Authorization: Bearer <token>`.
 
     Returns:
         Разобранная полезная нагрузка токена.
 
-    Raises:
-        AuthenticationError: Если подпись неверна, токен просрочен, либо
-            `iss`/`aud` не совпадают с ожидаемыми.
     """
     try:
         raw = jwt.decode(

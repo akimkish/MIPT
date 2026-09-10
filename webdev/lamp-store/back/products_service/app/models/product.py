@@ -1,5 +1,3 @@
-"""ORM-модель товара (лампы) каталога."""
-
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -45,8 +43,7 @@ class Product(Base):
         description: Необязательное описание.
         power_watts: Мощность в ваттах, > 0.
         socket_type: Тип цоколя. Хранится как `String(10)` с CHECK по
-            списку значений `SocketType` (нативный ENUM PostgreSQL в
-            проекте не используется).
+            списку значений `SocketType`.
         color_temperature_k: Цветовая температура в Кельвинах, 1000..10000.
         image_url: Необязательная ссылка на изображение.
         is_active: Видимость на витрине. Физическое удаление запрещено.

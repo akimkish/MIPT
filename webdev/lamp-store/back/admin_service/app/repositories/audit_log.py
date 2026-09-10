@@ -1,5 +1,3 @@
-"""Репозиторий журнала аудита (только добавление и чтение)."""
-
 import uuid
 from collections.abc import Sequence
 from typing import Any
@@ -13,18 +11,7 @@ from app.repositories.base import BaseRepository
 
 
 class AuditLogRepository(BaseRepository[AuditLog]):
-    """Доступ к журналу аудита.
-
-    Журнал — append-only: `update`/`delete` из `BaseRepository` для
-    этой сущности просто никогда не вызываются.
-    """
-
     def __init__(self, session: AsyncSession) -> None:
-        """Инициализирует репозиторий.
-
-        Args:
-            session: Открытая асинхронная сессия SQLAlchemy.
-        """
         super().__init__(session, AuditLog)
 
     async def record(

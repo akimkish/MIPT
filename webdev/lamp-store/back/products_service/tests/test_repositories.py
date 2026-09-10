@@ -1,5 +1,3 @@
-"""Тесты слоя repositories: атомарные операции с остатком, выборки, пагинация."""
-
 import uuid
 from datetime import UTC, datetime, timedelta
 
@@ -181,4 +179,4 @@ class TestReviewRepository:
 
 from tests.factories import (
     make_manufacturer,
-)  # noqa: E402  (используется выше в тестах)
+)

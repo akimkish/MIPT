@@ -1,7 +1,3 @@
-"""Тест механизма диспетчеризации доменных исключений в HTTP-коды, изолированно
-от конкретных роутов — через прямое поднятие исключений в тестовом эндпоинте.
-"""
-
 import pytest
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
