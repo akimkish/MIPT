@@ -1,4 +1,5 @@
 import type { MouseEvent } from 'react';
+import { kelvinToRgb } from '../../../lib/colorTemperature';
 import { SOCKET_TYPE_LABELS } from '../../../lib/constants';
 import { formatMoney } from '../../../lib/money';
 import type { ProductCatalogItem } from '../../../types/product';
@@ -12,14 +13,15 @@ interface ProductCardProps {
 }
 
 /**
- * Карточка товара в сетке витрины.
+ * Карточка товара в сетке витрины — оформлена как складская бирка:
+ * перфорация (пунктир) между фото и характеристиками, "дырка для нитки"
+ * в углу. Точка рядом с цветовой температурой — реальный приблизительный
+ * цвет свечения лампы при этом значении К (см. `kelvinToRgb`), а не
+ * декоративная точка произвольного цвета.
  *
- * "В корзину" добавляет 1 штуку сразу, без диалога выбора количества —
- * количество можно изменить прямо в корзине. Товар без остатка
- * (`quantity === 0`) показывает подпись "Нет в наличии" вместо кнопки:
- * снятый с продажи (`is_active=false`) товар витрина вообще не покажет,
- * а вот видимый товар с нулевым остатком — обычная ситуация (раскупили,
- * админ ещё не деактивировал), это разные вещи.
+ * "В корзину" добавляет 1 штуку сразу — количество можно поменять в
+ * самой корзине. Товар без остатка (`quantity === 0`) показывает
+ * подпись «Нет в наличии» вместо кнопки.
  *
  * @param product - Элемент витрины с уже посчитанной ценой по акциям.
  * @param onOpen - Колбэк перехода на страницу товара.
@@ -29,7 +31,7 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
   const outOfStock = product.quantity === 0;
 
   function handleAddToCart(event: MouseEvent) {
-    event.stopPropagation(); // не открывать карточку товара кликом по кнопке
+    event.stopPropagation();
     addItem({
       productId: product.product_id,
       productName: product.product_name,
@@ -41,27 +43,38 @@ export function ProductCard({ product, onOpen }: ProductCardProps) {
 
   return (
     <article
-      className={styles.card}
+      className={styles.tag}
       onClick={() => onOpen?.(product.product_id)}
       role={onOpen ? 'button' : undefined}
       tabIndex={onOpen ? 0 : undefined}
     >
+      <span className={styles.punchHole} aria-hidden="true" />
+
       <div className={styles.imageWrap}>
         {product.image_url ? (
           <img src={product.image_url} alt={product.product_name} className={styles.image} />
         ) : (
           <div className={styles.imagePlaceholder} aria-hidden="true">
-            {SOCKET_TYPE_LABELS[product.socket_type]}
+            {product.sku}
           </div>
         )}
       </div>
 
       <div className={styles.body}>
         <h3 className={styles.title}>{product.product_name}</h3>
-        <p className={styles.meta}>
-          {SOCKET_TYPE_LABELS[product.socket_type]} · {product.power_watts} Вт ·{' '}
-          {product.color_temperature_k} К
-        </p>
+
+        <div className={styles.specs}>
+          <span className={styles.spec}>
+            <span
+              className={styles.kelvinDot}
+              style={{ background: kelvinToRgb(product.color_temperature_k) }}
+              aria-hidden="true"
+            />
+            {product.color_temperature_k} К
+          </span>
+          <span className={styles.spec}>{SOCKET_TYPE_LABELS[product.socket_type]}</span>
+          <span className={styles.spec}>{product.power_watts} Вт</span>
+        </div>
 
         <div className={styles.priceRow}>
           <span className={styles.price}>{formatMoney(product.display_price)}</span>

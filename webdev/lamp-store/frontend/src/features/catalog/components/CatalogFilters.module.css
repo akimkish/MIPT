@@ -3,27 +3,65 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
-  padding: var(--space-4);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--space-6);
+  margin-top: var(--space-5);
 }
 
 .search {
   flex: 1 1 220px;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--copper);
   border-radius: var(--radius-sm);
-  font: inherit;
+  background: transparent;
+  color: var(--paper);
+  font-family: var(--font-sans);
+}
+
+.search::placeholder {
+  color: var(--ink-muted);
+}
+
+.search:focus {
+  outline: none;
+  border-color: var(--filament);
+  box-shadow: 0 0 0 2px rgba(232, 163, 61, 0.3);
 }
 
 .select {
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--copper);
   border-radius: var(--radius-sm);
-  font: inherit;
-  background: var(--color-surface);
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-sans);
+}
+
+.socketGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.socketButton {
+  padding: 5px var(--space-2);
+  border: 1px solid var(--copper);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.socketButton:hover {
+  border-color: var(--filament);
+}
+
+.socketButtonActive {
+  background: var(--filament);
+  border-color: var(--filament);
+  color: var(--ink);
+  font-weight: 700;
 }
 
 .priceRange {
@@ -33,15 +71,23 @@
 }
 
 .priceInput {
-  width: 96px;
+  width: 88px;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--copper);
   border-radius: var(--radius-sm);
-  font: inherit;
+  background: transparent;
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.priceInput:focus {
+  outline: none;
+  border-color: var(--filament);
 }
 
 .priceDash {
-  color: var(--color-text-muted);
+  color: var(--ink-muted);
 }
 
 .checkbox {
@@ -49,6 +95,6 @@
   align-items: center;
   gap: var(--space-2);
   font-size: 0.875rem;
-  color: var(--color-text);
+  color: var(--paper);
   white-space: nowrap;
 }

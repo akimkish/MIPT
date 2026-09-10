@@ -16,16 +16,18 @@ interface CatalogFiltersProps {
 const SOCKET_TYPES = Object.keys(SOCKET_TYPE_LABELS) as SocketType[];
 
 /**
- * Панель фильтров каталога.
+ * Панель фильтров каталога — визуально часть тёмной "панели управления"
+ * в шапке страницы (рендерится внутри `<header>` `CatalogPage`, фон
+ * наследуется оттуда, здесь заданы только сами элементы управления).
+ *
+ * Тип цоколя выбирается рядом кнопок-переключателей, а не `<select>` —
+ * так виден весь набор сразу, без открытия выпадающего списка; логика
+ * та же самая (`update({ socket_type })`), меняется только разметка.
  *
  * Каждое изменение сразу уходит наружу через `onChange`, без отдельной
- * кнопки "Применить" — на масштабе учебного магазина лишний шаг только
- * замедляет пользователя (запросы не настолько частые, чтобы требовался
- * дебаунс — если станут, это отдельная точечная правка здесь).
- *
- * Смена ЛЮБОГО фильтра, кроме листания страниц, сбрасывает `offset` на 0 —
- * иначе легко залипнуть на пустой странице после того, как фильтр сузил
- * выборку сильнее, чем было заказано страниц.
+ * кнопки "Применить". Смена ЛЮБОГО фильтра, кроме листания страниц,
+ * сбрасывает `offset` на 0 — иначе легко залипнуть на пустой странице
+ * после того, как фильтр сузил выборку сильнее, чем было заказано страниц.
  *
  * @param filters - Текущие значения фильтров (управляемый компонент).
  * @param onChange - Вызывается с новым набором фильтров при любом изменении.
@@ -77,18 +79,26 @@ export function CatalogFilters({ filters, onChange, categories, manufacturers }:
         ))}
       </select>
 
-      <select
-        className={styles.select}
-        value={filters.socket_type ?? ''}
-        onChange={(e) => update({ socket_type: (e.target.value || undefined) as SocketType | undefined })}
-      >
-        <option value="">Любой цоколь</option>
+      <div className={styles.socketGroup} role="group" aria-label="Тип цоколя">
+        <button
+          type="button"
+          className={!filters.socket_type ? `${styles.socketButton} ${styles.socketButtonActive}` : styles.socketButton}
+          onClick={() => update({ socket_type: undefined })}
+        >
+          Любой цоколь
+        </button>
         {SOCKET_TYPES.map((s) => (
-          <option key={s} value={s}>
-            {SOCKET_TYPE_LABELS[s]}
-          </option>
+          <button
+            key={s}
+            type="button"
+            title={SOCKET_TYPE_LABELS[s]}
+            className={filters.socket_type === s ? `${styles.socketButton} ${styles.socketButtonActive}` : styles.socketButton}
+            onClick={() => update({ socket_type: s })}
+          >
+            {s}
+          </button>
         ))}
-      </select>
+      </div>
 
       <div className={styles.priceRange}>
         <input

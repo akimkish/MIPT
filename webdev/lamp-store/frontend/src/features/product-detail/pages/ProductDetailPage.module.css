@@ -18,7 +18,7 @@
 
 .imageWrap {
   aspect-ratio: 4 / 3;
-  background: var(--color-surface-muted);
+  background: var(--paper-dim);
   border-radius: var(--radius-md);
   overflow: hidden;
 }
@@ -36,7 +36,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-muted);
+  color: var(--ink-muted);
 }
 
 .info {
@@ -48,24 +48,24 @@
 .breadcrumb {
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--color-text-muted);
+  color: var(--ink-muted);
 }
 
 .title {
   margin: 0;
   font-size: 1.75rem;
-  color: var(--color-text);
+  color: var(--ink);
 }
 
 .rating {
-  color: var(--color-accent-dim);
+  color: var(--filament-dim);
   letter-spacing: 1px;
   margin: 0;
 }
 
 .ratingValue {
   margin-left: var(--space-2);
-  color: var(--color-text-muted);
+  color: var(--ink-muted);
   letter-spacing: normal;
 }
 
@@ -78,17 +78,17 @@
 
 .specs dt {
   font-size: 0.75rem;
-  color: var(--color-text-muted);
+  color: var(--ink-muted);
 }
 
 .specs dd {
   margin: 0;
   font-size: 0.9375rem;
-  color: var(--color-text);
+  color: var(--ink);
 }
 
 .description {
-  color: var(--color-text);
+  color: var(--ink);
   line-height: 1.5;
 }
 
@@ -100,13 +100,15 @@
 }
 
 .price {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 1.75rem;
   font-weight: 700;
-  color: var(--color-text);
+  color: var(--ink);
 }
 
 .hint {
-  color: var(--color-accent-dim);
+  color: var(--filament-dim);
   font-size: 0.875rem;
 }
 
@@ -119,7 +121,7 @@
 .quantityInput {
   width: 72px;
   padding: var(--space-2) var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font: inherit;
 }
@@ -128,18 +130,18 @@
   padding: var(--space-2) var(--space-6);
   border: none;
   border-radius: var(--radius-sm);
-  background: var(--color-accent);
-  color: var(--color-text);
+  background: var(--filament);
+  color: var(--ink);
   font-weight: 600;
   cursor: pointer;
 }
 
 .addButton:hover {
-  background: var(--color-accent-dim);
+  background: var(--filament-dim);
 }
 
 .outOfStock {
-  color: var(--color-danger);
+  color: var(--danger);
   font-weight: 600;
   margin-top: var(--space-3);
 }
@@ -147,19 +149,19 @@
 .reviewsSection {
   margin-top: var(--space-8);
   padding-top: var(--space-8);
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid var(--border);
 }
 
 .reviewsHeading {
   margin: 0 0 var(--space-4);
   font-size: 1.375rem;
-  color: var(--color-text);
+  color: var(--ink);
 }
 
 .status {
-  color: var(--color-text-muted);
+  color: var(--ink-muted);
 }
 
 .error {
-  color: var(--color-danger);
+  color: var(--danger);
 }

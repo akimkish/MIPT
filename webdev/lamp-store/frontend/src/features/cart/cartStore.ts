@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartItem, CartState } from './types';
+import type { CartState } from './types';
 
 /**
  * Стор корзины покупателя.

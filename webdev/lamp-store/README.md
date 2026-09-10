@@ -32,14 +32,5 @@ docker compose up --build
 ```bash
 cd frontend/
 npm install
-npm install @tanstack/react-query zustand react-router-dom
-npm install vite --save-dev
-npm install --save-dev @vitejs/plugin-react
-npm install @types/node --save-dev
-```
-
-Запуск дев-сервера:
-
-```bash
 npm run dev
 ```

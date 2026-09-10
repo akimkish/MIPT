@@ -23,10 +23,10 @@ const backLinkStyle: CSSProperties = {
   display: 'inline-block',
   margin: 'var(--space-4)',
   padding: 'var(--space-2) var(--space-4)',
-  border: '1px solid var(--color-border)',
+  border: '1px solid var(--border)',
   borderRadius: 'var(--radius-sm)',
-  background: 'var(--color-surface)',
-  color: 'var(--color-text)',
+  background: 'var(--paper)',
+  color: 'var(--ink)',
   textDecoration: 'none',
   font: 'inherit',
 };

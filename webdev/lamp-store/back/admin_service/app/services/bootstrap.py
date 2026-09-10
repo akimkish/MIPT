@@ -5,7 +5,7 @@ import logging
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.core.config import Settings
+from app.core.config import settings
 from app.core.roles import RoleName
 from app.core.security import hash_password
 from app.models.admin import Admin
@@ -26,8 +26,8 @@ async def ensure_first_admin(
         Ничего не пробрасывает наружу: сбой создания первого админа
         не должен мешать сервису подняться. Все проблемы уходят в лог.
     """
-    email = (Settings.FIRST_ADMIN_EMAIL or "").strip().lower()
-    password = Settings.FIRST_ADMIN_PASSWORD or ""
+    email = (settings.first_admin_email or "").strip().lower()
+    password = settings.first_admin_password or ""
 
     if not email or not password:
         logger.warning(
@@ -46,7 +46,7 @@ async def ensure_first_admin(
         admin = Admin(
             email=email,
             password_hash=hash_password(password),
-            full_name=Settings.FIRST_ADMIN_NAME,
+            full_name=settings.first_admin_email,
             role_name=RoleName.SUPERADMIN.value,
         )
 

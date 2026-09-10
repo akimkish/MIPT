@@ -90,3 +90,5 @@ def get_settings() -> Settings:
         Единственный экземпляр Settings на процесс.
     """
     return Settings()
+
+settings = get_settings()
