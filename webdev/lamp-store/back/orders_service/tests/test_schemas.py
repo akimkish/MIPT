@@ -1,5 +1,3 @@
-"""Тесты Pydantic-схем в изоляции от БД (сценарии 57-60)."""
-
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -44,12 +42,7 @@ def test_order_status_update_rejects_unknown_value() -> None:
 
 
 def test_order_read_serializes_nested_items_from_orm_object() -> None:
-    """60. OrderRead.model_validate корректно читает вложенные items из ORM-like объекта.
-
-    Настоящий ORM-объект здесь не нужен — model_validate с
-    from_attributes=True работает с любым объектом, у которого есть
-    одноимённые атрибуты, что и проверяется без похода в БД.
-    """
+    """60. OrderRead.model_validate корректно читает вложенные items из ORM-like объекта."""
 
     class _FakeItem:
         item_id = uuid.uuid4()

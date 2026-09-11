@@ -1,13 +1,14 @@
-from app.core.roles import get_permissions_for_role
+from __future__ import annotations
 
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import bcrypt
 import jwt
 from pydantic import BaseModel
 
-from app.core.config import Settings
+from app.core.config import get_settings
+from app.core.roles import get_permissions_for_role
 from app.models.admin import Admin
 from app.models.enums import RoleName
 from app.services.exceptions import AuthenticationError
@@ -62,51 +63,54 @@ def verify_password(plain_password: str, password_hash: str) -> bool:
 def create_access_token(admin: Admin) -> str:
     """Выпускает access-токен для администратора.
 
-    Refresh-токена нет: срок жизни токена (`settings.jwt_ttl_minutes`, 30 минут)
-
     Args:
         admin: Администратор, для которого выпускается токен.
 
     Returns:
         Подписанный приватным ключом JWT (RS256).
     """
-    now = datetime.now(timezone.utc)
+    settings = get_settings()
+    now = datetime.now(UTC)
+    role_name = str(admin.role_name)
     payload = {
-        "iss": Settings.jwt_issuer,
-        "aud": Settings.jwt_audience,
+        "iss": settings.jwt_issuer,
+        "aud": settings.jwt_audience,
         "sub": str(admin.admin_id),
         "jti": str(uuid.uuid4()),
         "iat": now,
-        "exp": now + timedelta(minutes=Settings.jwt_ttl_minutes),
+        "exp": now + timedelta(minutes=settings.access_token_ttl_minutes),
         "email": admin.email,
-        "role": admin.role_name,
-        # KeyError здесь — намеренное поведение при неизвестной роли,
-        # см. get_permissions_for_role.
-        "permissions": get_permissions_for_role(admin.role_name),
+        "role": role_name,
+        "permissions": get_permissions_for_role(role_name),
     }
     return jwt.encode(
-        payload, Settings.jwt_private_key, algorithm=Settings.jwt_algorithm
+        payload, settings.jwt_private_key, algorithm=settings.jwt_algorithm
     )
 
 
 def decode_access_token(token: str) -> TokenPayload:
-    """Валидирует и разбирает access-токен.
+    """Валидирует и разбирает собственный access-токен.
 
     Args:
         token: JWT из заголовка `Authorization: Bearer <token>`.
 
     Returns:
-        Разобранная полезная нагрузка токена.
+        Разобранную полезную нагрузку токена.
 
+    Raises:
+        AuthenticationError: Токен невалиден, просрочен или не содержит
+            обязательных claims.
     """
+    settings = get_settings()
     try:
         raw = jwt.decode(
             token,
-            Settings.jwt_public_key,
-            algorithms=[Settings.jwt_algorithm],
-            issuer=Settings.jwt_issuer,
-            audience=Settings.jwt_audience,
-            leeway=10,
+            settings.jwt_public_key,
+            algorithms=[settings.jwt_algorithm],
+            issuer=settings.jwt_issuer,
+            audience=settings.jwt_audience,
+            leeway=settings.jwt_leeway_seconds,
+            options={"require": ["exp", "iat", "iss", "aud", "sub"]},
         )
     except jwt.PyJWTError as exc:
         raise AuthenticationError("Невалидный или просроченный токен") from exc

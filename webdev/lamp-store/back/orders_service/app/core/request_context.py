@@ -1,15 +1,3 @@
-# orders_service/app/core/request_context.py
-"""Хранение X-Request-ID текущего запроса.
-
-Идентификатор генерируется middleware на входе и должен попасть и в логи,
-и в исходящий HTTP-запрос к products_service. Передавать его аргументом через
-все слои (api → service → client) шумно, поэтому используется contextvar:
-он живёт в рамках одной asyncio-задачи, то есть одного HTTP-запроса.
-
-Если в проекте уже есть свой middleware с contextvar — используйте его,
-а этот модуль удалите: два источника request_id хуже одного.
-"""
-
 from contextvars import ContextVar
 
 _request_id: ContextVar[str | None] = ContextVar("request_id", default=None)

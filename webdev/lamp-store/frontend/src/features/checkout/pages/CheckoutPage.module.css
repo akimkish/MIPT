@@ -1,0 +1,229 @@
+.page {
+  background: var(--paper);
+  min-height: 100vh;
+}
+
+.header {
+  background: var(--ink);
+  padding: var(--space-8) var(--space-4) var(--space-6);
+}
+
+.headerInner {
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--paper);
+}
+
+.subheading {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+  color: var(--filament);
+}
+
+.content {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-10);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: var(--space-6);
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-tag);
+  padding: var(--space-5);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.field input,
+.field textarea {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit;
+  resize: vertical;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.field input:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--filament);
+  box-shadow: 0 0 0 2px rgba(232, 163, 61, 0.25);
+}
+
+.submitButton {
+  align-self: flex-start;
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--filament);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.submitButton:hover:not(:disabled) {
+  background: var(--filament-hot);
+}
+
+.submitButton:disabled {
+  background: var(--paper-dim);
+  color: var(--ink-muted);
+  cursor: not-allowed;
+}
+
+.error {
+  color: var(--danger);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.summary {
+  border: 1px dashed var(--ink);
+  border-radius: var(--radius-tag);
+  padding: var(--space-5);
+  background: var(--paper-dim);
+}
+
+.summaryHeading {
+  margin: 0 0 var(--space-3);
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  color: var(--ink);
+}
+
+.summaryList {
+  list-style: none;
+  margin: 0 0 var(--space-4);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.summaryRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  color: var(--ink);
+}
+
+.summaryName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summaryPrice {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.totalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--ink);
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+
+.totalValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.note {
+  margin: var(--space-3) 0 0;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+
+.confirmText {
+  font-family: var(--font-sans);
+  color: var(--ink);
+  margin: 0 0 var(--space-5);
+}
+
+.confirmActions {
+  margin-top: var(--space-5);
+}
+
+.empty {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+}
+
+.emptyHeading {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--ink);
+  margin: 0 0 var(--space-2);
+}
+
+.emptyText {
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-5);
+}
+
+.continueButton {
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--filament);
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+.continueButton:hover {
+  background: var(--filament-hot);
+}

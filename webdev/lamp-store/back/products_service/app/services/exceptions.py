@@ -38,3 +38,19 @@ class InsufficientStockError(DomainError):
             f"Недостаточно остатка по товару {product_id}: "
             f"запрошено {requested}, доступно {available}"
         )
+
+class ProductNotAvailableError(NotFoundError):
+    """Товар не найден или снят с продажи (`is_active = false`).
+ 
+    Attributes:
+        product_id: Идентификатор недоступного товара, если известен.
+    """
+ 
+    def __init__(self, message: str, product_id: uuid.UUID | None = None) -> None:
+        """
+        Args:
+            message: Текст причины для лога и поля `message` ответа.
+            product_id: Идентификатор недоступного товара.
+        """
+        super().__init__(message)
+        self.product_id = product_id

@@ -1,0 +1,48 @@
+.shell {
+  min-height: 100vh;
+  background: var(--paper);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--ink);
+  border-bottom: 1px solid var(--copper);
+}
+
+.brand {
+  font-family: var(--font-display);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--paper);
+  text-decoration: none;
+}
+
+.session {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.who {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--filament);
+}
+
+.logout {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--copper);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--paper);
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.logout:hover {
+  border-color: var(--filament);
+}

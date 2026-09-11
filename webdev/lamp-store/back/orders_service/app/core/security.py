@@ -1,13 +1,3 @@
-# orders_service/app/core/security.py
-"""Проверка JWT, выпущенного admin_service, и контроль прав доступа.
-
-Сервис не обращается к admin_service по сети: подпись проверяется локально
-публичным ключом (RS256). Приватный ключ есть только у admin_service, поэтому
-подделать токен на стороне products_service/orders_service невозможно.
-
-Файл продублирован в products_service и orders_service без изменений.
-"""
-
 from __future__ import annotations
 
 import base64
@@ -27,8 +17,6 @@ from app.core.permissions import Permission
 
 logger = logging.getLogger(__name__)
 
-# auto_error=False: при отсутствии заголовка FastAPI вернул бы 403 со своим
-# телом ответа, а нам нужен 401 в общем конверте {"code", "message", "details"}.
 _bearer_scheme = HTTPBearer(auto_error=False, description="JWT из admin_service")
 
 _ALGORITHM = "RS256"
@@ -84,9 +72,6 @@ def _public_key() -> str:
 
     Returns:
         Публичный ключ в формате PEM.
-
-    Raises:
-        ValueError: Если переменная пустая или не декодируется.
     """
     raw = Settings.JWT_PUBLIC_KEY_B64
     if not raw:
@@ -108,9 +93,6 @@ def decode_token(token: str) -> CurrentAdmin:
 
     Returns:
         Данные админа из claims.
-
-    Raises:
-        HTTPException: 401, если токен просрочен, подделан или неполон.
     """
     try:
         claims: dict[str, Any] = jwt.decode(
@@ -157,9 +139,6 @@ async def get_current_admin(
 
     Returns:
         Данные админа из токена.
-
-    Raises:
-        HTTPException: 401, если заголовка нет или токен невалиден.
     """
     if credentials is None or not credentials.credentials:
         raise _auth_error(
@@ -173,14 +152,7 @@ async def get_current_admin(
 def require_permission(
     *required: Permission,
 ) -> Callable[[CurrentAdmin], Awaitable[CurrentAdmin]]:
-    """Фабрика зависимостей: требует ВСЕ перечисленные права.
-
-    Использование::
-
-        @router.post("/products", dependencies=[Depends(require_permission(
-            Permission.PRODUCTS_WRITE))])
-
-    или, если нужен сам админ в теле обработчика::
+    """
 
         admin: CurrentAdmin = Depends(require_permission(Permission.PRODUCTS_WRITE))
 

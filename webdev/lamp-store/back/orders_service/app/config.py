@@ -1,10 +1,3 @@
-# orders_service/app/core/config.py
-"""Конфигурация сервиса orders_service.
-
-Все настройки читаются один раз из переменных окружения / .env через
-pydantic-settings и переиспользуются как синглтон (см. get_settings).
-"""
-
 from functools import lru_cache
 
 from pydantic import AnyHttpUrl, Field, PostgresDsn
@@ -42,13 +35,11 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Обязательные — без дефолта, отсутствие переменной должно валить старт.
     database_url: PostgresDsn = Field(alias="DATABASE_URL")
     jwt_public_key_b64: str = Field(alias="JWT_PUBLIC_KEY_B64")
     internal_api_key: str = Field(alias="INTERNAL_API_KEY")
     products_service_url: AnyHttpUrl = Field(alias="PRODUCTS_SERVICE_URL")
 
-    # Необязательные — с дефолтами.
     jwt_algorithm: str = Field(default="RS256", alias="JWT_ALGORITHM")
     jwt_issuer: str = Field(default="admin_service", alias="JWT_ISSUER")
     jwt_audience: str = Field(default="lamp-store", alias="JWT_AUDIENCE")
@@ -60,9 +51,6 @@ class Settings(BaseSettings):
     db_connect_attempts: int = Field(default=10, alias="DB_CONNECT_ATTEMPTS")
     db_connect_delay: float = Field(default=1.0, alias="DB_CONNECT_DELAY")
 
-    # Таймауты HTTP-клиента к products_service. Полей retry/backoff здесь
-    # нет намеренно: ретраев в проекте нет нигде (см. INTEGRATION_CONTRACT.md,
-    # rejected_alternatives) — одна попытка, а тип исключения решает исход.
     products_service_timeout_connect: float = Field(
         default=3.0, alias="PRODUCTS_SERVICE_TIMEOUT_CONNECT"
     )
@@ -73,12 +61,4 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    """Возвращает закешированный singleton-экземпляр Settings.
-
-    lru_cache без параметров кеширует по единственному вызову без аргументов,
-    поэтому .env читается и парсится один раз за жизнь процесса.
-
-    Returns:
-        Единственный экземпляр Settings на процесс.
-    """
     return Settings()

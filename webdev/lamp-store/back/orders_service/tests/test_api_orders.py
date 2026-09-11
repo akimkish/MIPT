@@ -1,11 +1,3 @@
-"""Тесты HTTP-эндпоинтов заказов и /health (сценарии 44-56).
-
-Авторизация в этих тестах проверяется через claim "permissions"
-(RS256-токены), а не через роли — orders_service не знает о ролях
-admin_service и сравнивает только строки прав (см. auth_contract в
-INTEGRATION_CONTRACT.md и app/core/security.py).
-"""
-
 import uuid
 
 import pytest
@@ -73,13 +65,7 @@ async def test_list_orders_email_filter_is_case_insensitive_end_to_end(
 async def test_view_only_permission_cannot_manage(
     client: AsyncClient, db_session, auth_headers
 ) -> None:
-    """47. Только VIEW_ORDERS: GET /orders — 200, PATCH .../status — 403.
-
-    Заменяет прежнюю формулировку "роль moderator": orders_service не
-    смотрит на роль, только на claim "permissions" — поэтому сценарий
-    "недостаточно прав на управление" здесь выражается как токен без
-    MANAGE_ORDERS, а не как конкретная роль admin_service.
-    """
+    """47. Только VIEW_ORDERS: GET /orders — 200, PATCH .../status — 403."""
     order = make_order(status=OrderStatus.NEW.value)
     db_session.add(order)
     await db_session.flush()
@@ -125,9 +111,7 @@ async def test_get_order_not_found_is_404(client: AsyncClient, auth_headers) -> 
 @pytest.mark.asyncio
 async def test_get_order_invalid_uuid_is_422(client: AsyncClient, auth_headers) -> None:
     """50. Невалидный UUID в пути — 422 (валидация FastAPI до сервиса)."""
-    response = await client.get(
-        "/api/v1/orders/not-a-uuid", headers=auth_headers()
-    )
+    response = await client.get("/api/v1/orders/not-a-uuid", headers=auth_headers())
     assert response.status_code == 422
 
 

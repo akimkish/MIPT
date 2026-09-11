@@ -17,6 +17,7 @@ cd lamp-store/
 cp products_service/.env.example products_service/.env
 cp orders_service/.env.example orders_service/.env
 cp admin_service/.env.example admin_service/.env
+source ./env.sh
 ```
 
 Откройте `admin_service/.env` и задайте `FIRST_ADMIN_EMAIL` /

@@ -1,15 +1,3 @@
-# orders_service/app/clients/products.py
-"""Клиент внутренних эндпоинтов products_service.
-
-Единственная точка, где orders_service знает URL-ы и формат чужого API.
-Выше по стеку работают только с доменными исключениями и Pydantic-моделями
-из app.clients.schemas.
-
-Все три эндпоинта живут под общим префиксом /api/v1/internal/stock —
-включая /prices, потому что роутер в products_service объявлен с этим
-префиксом целиком.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -63,10 +51,6 @@ class ProductsClient(BaseServiceClient):
     async def get_prices(self, items: list[StockItemRequest]) -> list[CartQuote]:
         """Считает цены корзины со скидками и отдаёт снимок позиций.
 
-        Остатки не меняются, поэтому неудача этого вызова НЕ требует
-        компенсации. Вызывается до резерва: возвращённые названия,
-        артикулы и цены копируются в позиции заказа.
-
         Args:
             items: Позиции корзины. Количество влияет на скидку через
                 promos.min_quantity, поэтому передаётся всегда.
@@ -75,11 +59,6 @@ class ProductsClient(BaseServiceClient):
             По одной записи на каждую запрошенную позицию; недоступные
             помечены is_available=False.
 
-        Raises:
-            ServiceUnavailableError: Соединение не установлено.
-            ServiceUnknownStateError: Таймаут, 5xx или нечитаемый ответ.
-            ServiceRejectedError: 4xx (обычно 401 при неверном токене
-                или 422 при разъехавшихся схемах).
         """
         payload = CartQuoteRequest(items=items)
         response = await self.request(
@@ -88,7 +67,9 @@ class ProductsClient(BaseServiceClient):
         try:
             return CartQuoteResponse.model_validate(response.json()).items
         except (ValueError, ValidationError) as exc:
-            logger.error("products_service returned unparsable prices response: %s", exc)
+            logger.error(
+                "products_service returned unparsable prices response: %s", exc
+            )
             raise ServiceUnknownStateError(
                 "products_service returned unparsable prices response",
                 reason="invalid_response_body",
@@ -99,10 +80,6 @@ class ProductsClient(BaseServiceClient):
     ) -> StockOperationResult:
         """Списывает остатки по всем позициям заказа.
 
-        Идемпотентен по order_id: повторный вызов не спишет остаток
-        второй раз и вернёт already_applied=True. Снимок цен здесь не
-        возвращается — он берётся из get_prices до этого вызова.
-
         Args:
             order_id: Идентификатор заказа, он же ключ идемпотентности.
             items: Позиции заказа.
@@ -110,12 +87,6 @@ class ProductsClient(BaseServiceClient):
         Returns:
             Факт операции с флагом already_applied.
 
-        Raises:
-            InsufficientStockError: 409, не хватает остатка.
-            ProductNotAvailableError: 404, товар не найден.
-            ServiceUnavailableError: Соединение не установлено — резерва нет.
-            ServiceUnknownStateError: Исход неизвестен, нужна компенсация.
-            ServiceRejectedError: Прочие 4xx (обычно ошибка конфигурации).
         """
         payload = ReserveRequest(order_id=order_id, items=items)
         try:
@@ -144,18 +115,12 @@ class ProductsClient(BaseServiceClient):
     async def release(self, order_id: UUID) -> StockOperationResult:
         """Возвращает остатки, списанные под заказ.
 
-        Идемпотентен: повторный вызов и вызов с неизвестным order_id
-        возвращают 200 и ничего не меняют.
-
         Args:
             order_id: Идентификатор заказа.
 
         Returns:
             Факт операции с флагом already_applied.
 
-        Raises:
-            ProductsClientError: Любая ошибка обращения. Вызывающий код
-                обязан обрабатывать её как best-effort и не падать.
         """
         payload = ReleaseRequest(order_id=order_id)
         response = await self.request(
@@ -172,11 +137,6 @@ class ProductsClient(BaseServiceClient):
     @staticmethod
     def _map_reserve_rejection(exc: ServiceRejectedError) -> Exception:
         """Превращает 4xx резерва в конкретное доменное исключение.
-
-        Сопоставление идёт по HTTP-статусу, а не по полю "code": формат
-        конверта ошибки products_service может отличаться, и завязываться
-        на него хрупко. 409 у reserve означает ровно одно — нехватку
-        остатка.
 
         Args:
             exc: Исключение, поднятое базовым клиентом.

@@ -1,5 +1,3 @@
-"""Сборка роутеров v1 orders_service в одно приложение."""
-
 from fastapi import APIRouter
 
 from app.api.v1.orders import router as orders_router

@@ -1,5 +1,3 @@
-"""ORM-модель позиции заказа."""
-
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -26,12 +24,6 @@ if TYPE_CHECKING:
 
 class OrderItem(Base):
     """Позиция заказа — неизменяемый снимок товара на момент оформления.
-
-    Все поля товара (название, sku, цены, картинка) копируются из
-    products_service в момент создания заказа и никогда не
-    обновляются — именно поэтому у модели нет `updated_at`. Связь с
-    каталогом хранится только как `external_product_id` без FK: заказы
-    и товары живут в разных БД разных сервисов.
 
     Attributes:
         item_id: Первичный ключ (UUID4), генерируется в Python.

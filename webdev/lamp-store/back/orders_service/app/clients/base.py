@@ -1,18 +1,3 @@
-# orders_service/app/clients/base.py
-"""Базовый HTTP-клиент для обращения к другим сервисам.
-
-Одна попытка на запрос. Ретраев нет нигде: ни ``HTTPTransport(retries=N)``,
-ни tenacity, ни самописного цикла. Причина — операции с остатками не идемпотентны
-на уровне HTTP-транспорта: «немного подождать и повторить» может привести
-к двойному списанию, если первый запрос всё-таки дошёл. Вместо повтора клиент
-сразу поднимает доменное исключение, по которому сага понимает, нужна ли
-компенсация.
-
-Каждая ошибка логируется ПЕРЕД выбросом: в except-ветке ещё доступен
-X-Request-ID и адрес запроса, а выше по стеку исключение уже может быть
-переупаковано в 503 без этих деталей.
-"""
-
 from __future__ import annotations
 
 import logging
@@ -31,13 +16,6 @@ logger = logging.getLogger(__name__)
 
 
 class BaseServiceClient:
-    """Тонкая обёртка над httpx.AsyncClient с единым разбором сбоев.
-
-    Экземпляр создаётся один раз на всё время жизни приложения (в lifespan)
-    и переиспользуется: AsyncClient держит пул соединений, создавать его
-    на каждый запрос дорого и бессмысленно.
-    """
-
     def __init__(
         self,
         *,
@@ -90,11 +68,6 @@ class BaseServiceClient:
         Returns:
             Ответ со статусом 2xx.
 
-        Raises:
-            ServiceUnavailableError: Соединение не установлено — запрос не ушёл.
-            ServiceUnknownStateError: Запрос ушёл, исход неизвестен (ReadTimeout,
-                5xx, обрыв соединения).
-            ServiceRejectedError: Сервис ответил 4xx.
         """
         request_id = get_request_id()
         headers = {"X-Request-ID": request_id} if request_id else {}

@@ -1,18 +1,8 @@
-# orders_service/app/api/v1/orders.py
-"""Эндпоинты заказов: административные и публичное оформление.
-
-Роутер намеренно смешанный. Общей зависимости аутентификации на нём НЕТ:
-`POST /orders` публичный (учётных записей у покупателей нет), а права
-проверяются на каждом административном эндпоинте отдельно. Если однажды
-понадобится закрыть весь роутер целиком, оформление придётся вынести
-в отдельный роутер — сейчас это лишняя сущность.
-"""
-
 from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_order_service
@@ -28,7 +18,6 @@ from app.services.checkout import CheckoutService
 from app.services.exceptions import (
     CatalogItemUnavailableError,
     CheckoutUnavailableError,
-    DuplicateOrderError,
     OutOfStockError,
 )
 from app.services.order import OrderService
@@ -40,9 +29,6 @@ RETRY_AFTER_SECONDS = "5"
 
 def get_products_client(request: Request) -> ProductsClient:
     """Достаёт единственный клиент products_service из состояния приложения.
-
-    Клиент создаётся в lifespan, а не на запрос: httpx.AsyncClient держит
-    пул соединений, пересоздавать его каждый раз дорого.
 
     Args:
         request: Текущий HTTP-запрос.
@@ -66,7 +52,7 @@ def get_checkout_service(
     Returns:
         Готовый CheckoutService.
     """
-    return CheckoutService(OrderRepository(session), products)
+    return CheckoutService(session, OrderRepository(session), products)
 
 
 @router.post(
@@ -74,37 +60,36 @@ def get_checkout_service(
     response_model=OrderRead,
     status_code=status.HTTP_201_CREATED,
     summary="Оформить заказ",
+    responses={
+        409: {"description": "Недостаточно остатка или товар снят с продажи"},
+        503: {"description": "Сервис каталога недоступен, заказ не оформлен"},
+    },
 )
 async def create_order(
     payload: OrderCreate,
+    request: Request,
+    response: Response,
     service: CheckoutService = Depends(get_checkout_service),
 ) -> OrderRead:
     """Оформляет заказ покупателя.
 
-    Эндпоинт публичный: учётных записей у покупателей нет, аутентификация
-    не требуется.
-
     Args:
         payload: Данные покупателя, позиции корзины и idempotency_key.
+        request: Текущий HTTP-запрос (источник `X-Request-ID`).
+        response: Объект ответа; нужен, чтобы подменить статус при повторе.
         service: Сервис оформления заказа.
 
     Returns:
-        Созданный заказ со снимком позиций.
+        Созданный или ранее созданный заказ со снимком позиций.
 
-    Raises:
-        HTTPException: 409 при дубле, нехватке остатка или снятом с продажи
-            товаре; 503 при недоступности products_service.
     """
+    request_id = request.headers.get("X-Request-ID")
     try:
-        order = await service.create_order(payload)
-    except (DuplicateOrderError, OutOfStockError, CatalogItemUnavailableError) as exc:
+        order, created = await service.create_order(payload, request_id=request_id)
+    except (OutOfStockError, CatalogItemUnavailableError) as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail={
-                "code": exc.code,
-                "message": exc.message,
-                "details": exc.details,
-            },
+            detail={"code": exc.code, "message": exc.message, "details": exc.details},
         ) from exc
     except CheckoutUnavailableError as exc:
         # Тип исходного исключения на ответ покупателю не влияет: он влиял
@@ -115,6 +100,8 @@ async def create_order(
             headers={"Retry-After": RETRY_AFTER_SECONDS},
         ) from exc
 
+    if not created:
+        response.status_code = status.HTTP_200_OK
     return OrderRead.model_validate(order)
 
 
@@ -176,9 +163,6 @@ async def update_order_status(
     _admin: CurrentAdmin = Depends(require_permission(Permission.MANAGE_ORDERS)),
 ) -> OrderRead:
     """Переводит заказ в новый статус по правилам допустимых переходов.
-
-    Платёжной системы в проекте нет, поэтому статусы paid/shipped/completed
-    проставляет админ вручную через этот эндпоинт.
 
     Args:
         order_id: Идентификатор заказа.

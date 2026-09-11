@@ -5,7 +5,7 @@ APP_HOST="${APP_HOST:-0.0.0.0}"
 APP_PORT="${APP_PORT:-8003}"
 
 echo "[entrypoint] Ожидание готовности БД..."
-python -m app.db.database
+python -m app.db.wait_for_db
 
 echo "[entrypoint] Применение миграций Alembic..."
 alembic upgrade head

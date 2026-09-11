@@ -1,5 +1,3 @@
-"""ORM-модель заказа."""
-
 import uuid
 from datetime import datetime
 from decimal import Decimal
@@ -25,10 +23,6 @@ if TYPE_CHECKING:
 
 class Order(Base):
     """Заказ покупателя.
-
-    Заказы физически не удаляются: отмена выражается статусом
-    `cancelled`. Позиции заказа (`OrderItem`) — неизменяемый снимок
-    товаров на момент оформления и здесь не пересчитываются.
 
     Attributes:
         order_id: Первичный ключ (UUID4), генерируется в Python.

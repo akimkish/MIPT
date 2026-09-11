@@ -1,5 +1,3 @@
-"""Тесты OrderRepository (сценарии 11-22)."""
-
 import uuid
 
 import pytest
@@ -23,7 +21,7 @@ async def test_get_by_id_loads_items(db_session: AsyncSession) -> None:
     found = await repo.get_by_id(order.order_id)
 
     assert found is not None
-    assert len(found.items) == 1  # доступ без дополнительного await/lazy-load
+    assert len(found.items) == 1
 
 
 @pytest.mark.asyncio
@@ -76,12 +74,7 @@ async def test_list_orders_filters_by_status(db_session: AsyncSession) -> None:
 
 @pytest.mark.asyncio
 async def test_list_orders_filters_by_exact_email(db_session: AsyncSession) -> None:
-    """16. Фильтр по email — точное совпадение, без нормализации регистра.
-
-    Репозиторий сознательно не приводит регистр сам (это ответственность
-    сервисного слоя) — тест фиксирует именно этот контракт: заглавные
-    буквы в фильтре НЕ найдут email, сохранённый в нижнем регистре.
-    """
+    """16. Фильтр по email — точное совпадение, без нормализации регистра."""
     db_session.add(make_order(email="buyer@example.com"))
     await db_session.flush()
 
@@ -151,19 +144,6 @@ async def test_update_status_changes_status(db_session: AsyncSession) -> None:
 async def test_concurrent_status_update_last_write_wins(
     db_session: AsyncSession,
 ) -> None:
-    """22. Edge-case: параллельная смена статуса — детерминированный итог.
-
-    ...(предыдущий текст docstring без изменений)...
-
-    Перед финальной проверкой `db_session.expire(order)` обязателен:
-    статус заказа меняется в БД через session_a/session_b на том же
-    соединении, но объект `order`, уже загруженный в identity map
-    db_session с момента начального flush(), об этом не знает — ORM
-    не перезаписывает атрибуты уже закешированного объекта при
-    повторном SELECT через ту же сессию. Без expire() финальный
-    get_by_id вернул бы тот же Python-объект со старым, устаревшим
-    значением status="new", хотя в БД уже лежит "cancelled".
-    """
     order = make_order(status=OrderStatus.NEW.value)
     db_session.add(order)
     await db_session.flush()
@@ -188,5 +168,4 @@ async def test_concurrent_status_update_last_write_wins(
 
     db_session.expire(order)
     final = await OrderRepository(db_session).get_by_id(order_id)
-    # Побеждает последний commit — session_b.
     assert final.status == OrderStatus.CANCELLED.value

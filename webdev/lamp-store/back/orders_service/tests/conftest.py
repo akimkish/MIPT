@@ -1,20 +1,3 @@
-"""Общие фикстуры тестов orders_service: тестовая БД, HTTP-клиент, фабрики.
-
-ВАЖНО: переменные окружения для тестовой БД, JWT-ключей и остальных
-обязательных настроек выставляются здесь ДО первого импорта модулей
-приложения. `app.core.config.get_settings()` и
-`app.db.database.async_session_factory` читают окружение в момент
-первого вызова/импорта — если переменные не будут выставлены раньше,
-сборка `Settings()` упадёт с `ValidationError` ещё на этапе сбора
-тестов (pytest --collect-only), как это уже происходило.
-
-Тестовая пара RSA-ключей генерируется один раз на процесс: приватным
-ключом `make_token` подписывает тестовые токены, публичный уходит в
-`JWT_PUBLIC_KEY_B64`, которым `app.core.security` реально проверяет
-подпись — так тесты идут по настоящему пути RS256-проверки, а не мимо
-него.
-"""
-
 import base64
 import os
 
@@ -49,9 +32,6 @@ os.environ.setdefault(
 )
 os.environ.setdefault("INTERNAL_API_KEY", "test-internal-api-key")
 os.environ.setdefault("PRODUCTS_SERVICE_URL", "http://products_service:8000")
-# JWT_ALGORITHM/JWT_ISSUER/JWT_AUDIENCE/JWT_LEEWAY_SECONDS оставлены на
-# дефолтах Settings ("RS256", "admin_service", "lamp-store", 10 секунд) —
-# они совпадают с auth_contract, переопределять не нужно.
 
 import uuid
 from collections.abc import AsyncGenerator, Callable
@@ -87,12 +67,6 @@ TEST_DATABASE_URL = os.environ["DATABASE_URL"]
 async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
     """Создаёт движок на тестовую БД и один раз накатывает схему.
 
-    Схема создаётся напрямую через `Base.metadata.create_all`, а не
-    через `alembic upgrade head`: для основной массы тестов важна сама
-    структура таблиц/ограничений, а не процесс миграции. Корректность
-    самой миграции (что она действительно порождает эту же схему и
-    откатывается обратно) проверяется отдельно, в `test_migrations.py`.
-
     Yields:
         Асинхронный движок SQLAlchemy на тестовую БД.
     """
@@ -108,15 +82,7 @@ async def test_engine() -> AsyncGenerator[AsyncEngine, None]:
 async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, None]:
     """Даёт сессию в транзакции, откатываемой после каждого теста.
 
-    Открывает соединение и внешнюю транзакцию на уровне connection,
-    затем создаёт `AsyncSession` с `join_transaction_mode="create_savepoint"`:
-    любой `session.commit()` внутри тестируемого кода (репозитории и
-    сервисы вызывают его напрямую) на деле лишь освобождает вложенный
-    SAVEPOINT, а не завершает внешнюю транзакцию. Поэтому данные теста
-    никогда не долетают до реальной БД — откат в `finally` гарантированно
-    стирает все изменения, тесты не зависят друг от друга.
-
-    Args:
+     Args:
         test_engine: Движок тестовой БД (session-scoped).
 
     Yields:
@@ -140,12 +106,7 @@ async def db_session(test_engine: AsyncEngine) -> AsyncGenerator[AsyncSession, N
 
 @pytest_asyncio.fixture
 async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    """Даёт асинхронный HTTP-клиент с подменённой зависимостью БД.
-
-    Подмена `get_session` на фикстуру `db_session` — ключевой момент:
-    без неё роуты открывали бы собственную сессию на реальный
-    `async_session_factory`, и тестовая транзакция (см. `db_session`)
-    просто не была бы видна запросам через клиент.
+    """Даёт асинхронный HTTP-клиент с подменённой зависимост
 
     Args:
         db_session: Сессия текущего теста, используемая всеми запросами.
@@ -164,16 +125,8 @@ async def client(db_session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     app.dependency_overrides.clear()
 
 
-# --- Фабрики тестовых данных -------------------------------------------
-
-
 def make_order(**overrides: object) -> Order:
     """Собирает ORM-объект заказа с валидными значениями по умолчанию.
-
-    Не добавляет объект в сессию и не делает flush — это осознанно
-    оставлено вызывающему тесту, чтобы тест сам решал, когда объект
-    должен реально попасть в БД (например, для проверки CHECK-ограничений
-    нужен именно flush с "плохими" данными).
 
     Args:
         **overrides: Поля, которые нужно переопределить относительно
@@ -244,20 +197,12 @@ async def saved_order(db_session: AsyncSession) -> Order:
     return order
 
 
-# --- Аутентификация (RS256, claims по auth_contract) -----------------------
-
-
 TokenFactory = Callable[..., str]
 
 
 @pytest.fixture
 def make_token() -> TokenFactory:
     """Даёт фабрику JWT-токенов (RS256), подписанных тестовым приватным ключом.
-
-    Возвращает функцию, а не готовый токен: разным тестам нужны разные
-    наборы прав, время жизни, issuer/audience и (для проверки подделки)
-    другой ключ подписи — проще параметризовать вызов, чем городить
-    фикстуру на каждый случай.
 
     Returns:
         Функция `make_token(...)`, см. сигнатуру `_make_token`.

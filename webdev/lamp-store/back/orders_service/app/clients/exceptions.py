@@ -1,20 +1,3 @@
-# orders_service/app/clients/exceptions.py
-"""Исключения обращения к products_service.
-
-Иерархия построена не по типу сетевой ошибки, а по ОТВЕТУ на вопрос
-«в каком состоянии осталась чужая БД». Именно от этого зависит, нужна ли
-компенсация (release), а не от текста сообщения:
-
-    ServiceUnavailableError   — запрос не ушёл, транзакции точно не было
-    ServiceUnknownStateError  — запрос ушёл, исход неизвестен → нужен release
-    ServiceRejectedError      — сервис ответил 4xx, транзакция откачена
-    InsufficientStockError    — 409, штатная нехватка остатка
-    ProductNotAvailableError  — 404, товар снят с продажи
-
-Все они наследуются от ProductsClientError, но ловить только базовый класс
-в саге нельзя: три группы требуют разных действий.
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -25,7 +8,7 @@ class ProductsClientError(Exception):
 
     Attributes:
         reason: Короткая машиночитаемая причина для логов.
-        request_sent: Дошёл ли запрос до сервиса (насколько это известно).
+        request_sent: Дошёл ли запрос до сервиса.
     """
 
     request_sent: bool = False
@@ -61,12 +44,7 @@ class ServiceUnknownStateError(ProductsClientError):
 
 class ServiceRejectedError(ProductsClientError):
     """Сервис ответил 4xx, кроме штатных 409/404.
-
-    Практически всегда означает ошибку конфигурации (неверный
-    X-Internal-Token → 401) или расхождение схем (422). Транзакция в
-    products_service не начиналась, компенсация не нужна.
-
-    Attributes:
+        Attributes:
         status_code: HTTP-статус ответа.
         code: Значение поля "code" из конверта ошибки, если оно было.
         body: Разобранное тело ответа целиком (нужно для details у 409).

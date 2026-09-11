@@ -1,32 +1,24 @@
-"""Pydantic-схемы позиции заказа."""
-
 import uuid
 from datetime import datetime
 from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+
 class OrderItemRead(BaseModel):
     """Позиция заказа в ответах API — неизменяемый снимок товара.
 
-    Полностью повторяет набор полей модели `OrderItem`: снимок не
-    пересчитывается и не редактируется, поэтому отдельных
-    `OrderItemCreate`-с-ценами или `OrderItemUpdate` не существует —
-    цены и итог по позиции вычисляет products_service/сервисный слой
-    orders_service при оформлении заказа (Этап 7), а не клиент.
-
-    Attributes:
-        item_id: Идентификатор позиции.
-        external_product_id: Идентификатор товара в products_service.
-        product_name: Название товара на момент заказа.
-        sku: Артикул товара на момент заказа.
-        image_url: Ссылка на изображение товара на момент заказа.
-        item_quantity: Количество единиц товара в позиции, > 0.
-        original_unit_price: Цена за единицу до применения скидки.
-        unit_price: Цена за единицу после применения скидки.
-        promo_id: Идентификатор применённой акции, если была.
-        total_price: Итог по позиции (`unit_price * item_quantity`).
-        created_at: Момент создания записи.
+    item_id: Идентификатор позиции.
+    external_product_id: Идентификатор товара в products_service.
+    product_name: Название товара на момент заказа.
+    sku: Артикул товара на момент заказа.
+    image_url: Ссылка на изображение товара на момент заказа.
+    item_quantity: Количество единиц товара в позиции, > 0.
+    original_unit_price: Цена за единицу до применения скидки.
+    unit_price: Цена за единицу после применения скидки.
+    promo_id: Идентификатор применённой акции, если была.
+    total_price: Итог по позиции (`unit_price * item_quantity`).
+    created_at: Момент создания записи.
     """
 
     model_config = ConfigDict(from_attributes=True)

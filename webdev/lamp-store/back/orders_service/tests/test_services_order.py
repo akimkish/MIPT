@@ -1,5 +1,3 @@
-"""Тесты OrderService (сценарии 23-36)."""
-
 import uuid
 
 import pytest
@@ -104,10 +102,6 @@ async def test_disallowed_status_transitions_raise_conflict(
     db_session: AsyncSession, current: OrderStatus, target: OrderStatus
 ) -> None:
     """31-33. Недопустимые переходы (включая откат и self-transition) дают ConflictError.
-
-    Статус в БД не должен измениться — проверяем это отдельно, а не
-    только факт исключения, чтобы не пропустить случай "исключение
-    выброшено, но запись уже успела обновиться".
     """
     order = make_order(status=current.value)
     db_session.add(order)
@@ -158,11 +152,6 @@ async def test_cannot_manually_set_service_statuses(
 
 def test_all_statuses_present_in_transition_graph() -> None:
     """36. Каждое значение OrderStatus — ключ в ORDER_STATUS_TRANSITIONS.
-
-    Структурная страховка: если в будущем в OrderStatus добавят новое
-    значение и забудут завести для него запись в графе переходов,
-    `is_transition_allowed` упадёт с KeyError в проде на первом же
-    вызове для этого статуса — этот тест ловит забытую запись раньше.
     """
     assert set(ORDER_STATUS_TRANSITIONS.keys()) == set(OrderStatus)
 

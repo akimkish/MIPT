@@ -1,191 +1,230 @@
+"""Проверка JWT администратора и токена service-to-service.
+
+Токен админа проверяется локально: подпись RS256 сверяется публичным ключом
+из настроек, сетевого обращения к admin_service нет ни на одном запросе.
+
+Сервис ничего не знает о ролях: решение принимается по claim ``permissions``,
+который admin_service собирает из ROLE_PERMISSIONS при выпуске токена.
+"""
+
 from __future__ import annotations
 
 import base64
 import logging
 import secrets
+import uuid
 from collections.abc import Awaitable, Callable
 from functools import lru_cache
-from typing import Any
-from uuid import UUID
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.core.permissions import Permission
 
 logger = logging.getLogger(__name__)
 
-_bearer_scheme = HTTPBearer(auto_error=False, description="JWT из admin_service")
-
-_ALGORITHM = "RS256"
+_bearer_scheme = HTTPBearer(auto_error=False)
 
 
-class CurrentAdmin(BaseModel):
-    """Админ, распознанный из JWT. В БД сервиса такой сущности нет."""
+class TokenPayload(BaseModel):
+    """Полезная нагрузка access-токена admin_service.
 
-    model_config = ConfigDict(frozen=True)
+    Attributes:
+        sub: Идентификатор администратора (`admins.admin_id`).
+        jti: Идентификатор токена. Сейчас не используется, зарезервирован
+            под возможный денилист.
+        email: Email администратора в нижнем регистре.
+        role: Строка `admins.role_name` как есть. Используется только для
+            логов: решения по ней не принимаются.
+        permissions: Строковые права, собранные из ROLE_PERMISSIONS.
+        iat: Момент выпуска токена (unix timestamp).
+        exp: Момент истечения токена (unix timestamp).
+    """
 
-    admin_id: UUID
+    model_config = ConfigDict(extra="ignore")
+
+    sub: uuid.UUID
+    jti: uuid.UUID
     email: str
     role: str
-    permissions: frozenset[str]
+    permissions: list[str] = []
+    iat: int
+    exp: int
 
-    def has_permission(self, permission: Permission) -> bool:
-        """Проверяет наличие одного права.
-
-        Args:
-            permission: Требуемое право.
+    @property
+    def admin_id(self) -> uuid.UUID:
+        """Читаемый псевдоним для `sub`.
 
         Returns:
-            True, если право есть в токене.
+            Идентификатор администратора.
         """
-        return permission.value in self.permissions
+        return self.sub
 
 
-def _auth_error(status_code: int, code: str, message: str) -> HTTPException:
-    """Собирает HTTPException в общем для проекта конверте ошибки.
+CurrentAdmin = TokenPayload
+"""Псевдоним для аннотаций эндпоинтов: `_admin: CurrentAdmin = Depends(...)`."""
 
-    Args:
-        status_code: HTTP-статус ответа.
-        code: Машиночитаемый код ошибки.
-        message: Человекочитаемое описание.
 
-    Returns:
-        Исключение, которое обработчик FastAPI превратит в
-        {"code", "message", "details"}.
-    """
-    return HTTPException(
-        status_code=status_code,
-        detail={"code": code, "message": message, "details": None},
-        headers={"WWW-Authenticate": "Bearer"},
-    )
+class AuthError(HTTPException):
+    """Ошибка аутентификации (401) в едином конверте ошибки проекта."""
+
+    def __init__(self, message: str, code: str = "UNAUTHENTICATED") -> None:
+        """Инициализирует исключение.
+
+        Args:
+            message: Человекочитаемая причина отказа.
+            code: Машиночитаемый код ошибки.
+        """
+        super().__init__(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"code": code, "message": message, "details": None},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+
+class PermissionDeniedError(HTTPException):
+    """Ошибка авторизации (403): токен валиден, но прав не хватает."""
+
+    def __init__(self, missing: list[str]) -> None:
+        """Инициализирует исключение.
+
+        Args:
+            missing: Права, которых не оказалось в claim `permissions`.
+        """
+        super().__init__(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={
+                "code": "PERMISSION_DENIED",
+                "message": "Недостаточно прав для выполнения операции",
+                "details": {"missing_permissions": missing},
+            },
+        )
 
 
 @lru_cache(maxsize=1)
-def _public_key() -> str:
-    """Достаёт публичный ключ из base64-переменной окружения.
+def get_public_key() -> str:
+    """Декодирует публичный ключ RS256 из base64 в PEM.
 
-    PEM хранится в base64, потому что содержит переносы строк, а .env их
-    нормально не переживает.
+    Ключ кешируется: парсить его на каждом запросе незачем, за время жизни
+    процесса он не меняется. В окружении хранится в base64, потому что PEM
+    содержит переносы строк и плохо переживает .env-файлы.
 
     Returns:
         Публичный ключ в формате PEM.
 
+    Raises:
+        ValueError: Ключ не задан или не декодируется в PEM.
     """
-    raw = Settings.JWT_PUBLIC_KEY_B64
+    raw = get_settings().jwt_public_key_b64
     if not raw:
-        raise ValueError("JWT_PUBLIC_KEY_B64 is not configured")
+        raise ValueError("JWT_PUBLIC_KEY_B64 не задан: проверка токенов невозможна")
     try:
-        return base64.b64decode(raw).decode("utf-8")
-    except Exception as exc:  # noqa: BLE001 - конфигурационная ошибка на старте
-        raise ValueError("JWT_PUBLIC_KEY_B64 is not valid base64 PEM") from exc
-
-
-def decode_token(token: str) -> CurrentAdmin:
-    """Проверяет подпись и обязательные claims токена.
-
-    Проверяются: подпись, ``exp``, ``iss``, ``aud``. Допуск на расхождение
-    часов между контейнерами — 10 секунд.
-
-    Args:
-        token: Строка JWT без префикса "Bearer ".
-
-    Returns:
-        Данные админа из claims.
-
-    """
-    try:
-        claims: dict[str, Any] = jwt.decode(
-            token,
-            _public_key(),
-            algorithms=[_ALGORITHM],
-            issuer=Settings.JWT_ISSUER,
-            audience=Settings.JWT_AUDIENCE,
-            leeway=Settings.JWT_LEEWAY_SECONDS,
-            options={"require": ["exp", "iat", "iss", "aud", "sub"]},
+        pem = base64.b64decode(raw).decode("utf-8")
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise ValueError("JWT_PUBLIC_KEY_B64 не является base64 от PEM") from exc
+    if "BEGIN PUBLIC KEY" not in pem:
+        raise ValueError(
+            "JWT_PUBLIC_KEY_B64 декодируется не в PEM с публичным ключом "
+            "(возможно, туда попал приватный ключ)"
         )
-    except jwt.ExpiredSignatureError as exc:
-        raise _auth_error(
-            status.HTTP_401_UNAUTHORIZED, "TOKEN_EXPIRED", "Token has expired"
-        ) from exc
-    except jwt.InvalidTokenError as exc:
-        # Сюда попадают чужой iss/aud, битая подпись, отсутствующие claims.
-        logger.warning("JWT rejected: %s", exc)
-        raise _auth_error(
-            status.HTTP_401_UNAUTHORIZED, "INVALID_TOKEN", "Invalid token"
-        ) from exc
-
-    try:
-        return CurrentAdmin(
-            admin_id=UUID(str(claims["sub"])),
-            email=str(claims.get("email", "")),
-            role=str(claims.get("role", "")),
-            permissions=frozenset(claims.get("permissions") or ()),
-        )
-    except (KeyError, ValueError) as exc:
-        logger.warning("JWT payload is malformed: %s", exc)
-        raise _auth_error(
-            status.HTTP_401_UNAUTHORIZED, "INVALID_TOKEN", "Invalid token payload"
-        ) from exc
+    return pem
 
 
 async def get_current_admin(
     credentials: HTTPAuthorizationCredentials | None = Depends(_bearer_scheme),
-) -> CurrentAdmin:
-    """Зависимость: требует валидный токен, но никаких конкретных прав.
+    settings: Settings = Depends(get_settings),
+) -> TokenPayload:
+    """Извлекает и проверяет access-токен из заголовка `Authorization`.
+
+    Проверяются подпись, `exp`, `iss` и `aud` с допуском на расхождение часов.
 
     Args:
-        credentials: Заголовок Authorization, разобранный FastAPI.
+        credentials: Разобранный заголовок `Authorization: Bearer <token>`.
+        settings: Настройки сервиса.
 
     Returns:
-        Данные админа из токена.
+        Провалидированную полезную нагрузку токена.
 
+    Raises:
+        AuthError: Заголовка нет, токен просрочен, повреждён, подписан чужим
+            ключом или не содержит обязательных claims.
     """
     if credentials is None or not credentials.credentials:
-        raise _auth_error(
-            status.HTTP_401_UNAUTHORIZED,
-            "NOT_AUTHENTICATED",
-            "Authorization header is missing",
+        raise AuthError("Требуется заголовок Authorization: Bearer <token>")
+
+    try:
+        claims = jwt.decode(
+            credentials.credentials,
+            key=get_public_key(),
+            algorithms=[settings.jwt_algorithm],
+            issuer=settings.jwt_issuer,
+            audience=settings.jwt_audience,
+            leeway=settings.jwt_leeway_seconds,
+            options={"require": ["exp", "iat", "iss", "aud", "sub"]},
         )
-    return decode_token(credentials.credentials)
+    except jwt.ExpiredSignatureError as exc:
+        raise AuthError("Срок действия токена истёк", code="TOKEN_EXPIRED") from exc
+    except jwt.InvalidTokenError as exc:
+        # Сюда попадают чужой iss/aud, неверная подпись и битый токен.
+        # Наружу причину не раскрываем, в лог пишем.
+        logger.warning("Отклонён токен: %s", exc)
+        raise AuthError("Невалидный токен", code="INVALID_TOKEN") from exc
+
+    try:
+        return TokenPayload.model_validate(claims)
+    except ValidationError as exc:
+        logger.warning("Токен с валидной подписью, но неожиданными claims: %s", exc)
+        raise AuthError("Невалидный токен", code="INVALID_TOKEN") from exc
 
 
 def require_permission(
     *required: Permission,
-) -> Callable[[CurrentAdmin], Awaitable[CurrentAdmin]]:
-    """Фабрика зависимостей: требует ВСЕ перечисленные права.
+) -> Callable[..., Awaitable[TokenPayload]]:
+    """Создаёт зависимость FastAPI, требующую перечисленные права.
+
+    Требуются ВСЕ перечисленные права одновременно. Зависимость можно вешать
+    как на эндпоинт, так и на роутер целиком через `dependencies=[...]`.
 
     Args:
-        *required: Права, которые обязаны присутствовать в токене одновременно.
+        *required: Права, необходимые для доступа к эндпоинту.
 
     Returns:
-        Асинхронную зависимость FastAPI, возвращающую CurrentAdmin.
+        Асинхронную зависимость, возвращающую полезную нагрузку токена.
 
+    Example:
+        >>> _admin: CurrentAdmin = Depends(
+        ...     require_permission(Permission.MANAGE_PRODUCTS)
+        ... )
     """
-    if not required:
-        raise ValueError("require_permission() needs at least one permission")
-
-    missing_template = ", ".join(sorted(p.value for p in required))
+    required_values = [permission.value for permission in required]
 
     async def dependency(
-        admin: CurrentAdmin = Depends(get_current_admin),
-    ) -> CurrentAdmin:
-        """Сверяет права из токена с требуемыми."""
-        if not all(admin.has_permission(p) for p in required):
+        admin: TokenPayload = Depends(get_current_admin),
+    ) -> TokenPayload:
+        """Проверяет наличие требуемых прав в токене.
+
+        Args:
+            admin: Полезная нагрузка уже проверенного токена.
+
+        Returns:
+            Ту же полезную нагрузку, если прав достаточно.
+
+        Raises:
+            PermissionDeniedError: Не хватает хотя бы одного права.
+        """
+        granted = set(admin.permissions)
+        missing = [value for value in required_values if value not in granted]
+        if missing:
             logger.info(
-                "Access denied for admin=%s role=%s: requires %s",
+                "Отказ в доступе админу %s (роль %s): не хватает прав %s",
                 admin.admin_id,
                 admin.role,
-                missing_template,
+                missing,
             )
-            raise _auth_error(
-                status.HTTP_403_FORBIDDEN,
-                "PERMISSION_DENIED",
-                f"Required permission(s): {missing_template}",
-            )
+            raise PermissionDeniedError(missing)
         return admin
 
     return dependency
@@ -193,26 +232,26 @@ def require_permission(
 
 async def verify_service_token(
     x_internal_token: str | None = Header(default=None, alias="X-Internal-Token"),
+    settings: Settings = Depends(get_settings),
 ) -> None:
-    """Проверяет общий секрет для вызовов из orders_service.
+    """Проверяет заголовок `X-Internal-Token` на internal-эндпоинтах.
+
+    JWT здесь неприменим: orders_service не пользователь и токена админа не
+    имеет. Сравнение через `secrets.compare_digest` — постоянное по времени,
+    чтобы по времени ответа нельзя было подбирать ключ посимвольно.
 
     Args:
-        x_internal_token: Значение заголовка X-Internal-Token.
+        x_internal_token: Значение заголовка из запроса.
+        settings: Настройки сервиса.
 
+    Raises:
+        AuthError: Заголовок отсутствует или не совпадает с INTERNAL_API_KEY.
     """
-    expected = Settings.INTERNAL_API_KEY
-    if not expected:
-        raise ValueError("INTERNAL_API_KEY is not configured")
-
     if x_internal_token is None or not secrets.compare_digest(
-        x_internal_token, expected
+        x_internal_token, settings.internal_api_key
     ):
-        logger.warning("Internal endpoint access denied: bad or missing token")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={
-                "code": "INVALID_SERVICE_TOKEN",
-                "message": "Invalid or missing X-Internal-Token",
-                "details": None,
-            },
+        logger.warning("Запрос к internal-эндпоинту с неверным X-Internal-Token")
+        raise AuthError(
+            "Неверный или отсутствующий X-Internal-Token",
+            code="INVALID_SERVICE_TOKEN",
         )
