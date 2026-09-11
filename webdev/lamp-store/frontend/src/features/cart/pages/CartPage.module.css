@@ -1,0 +1,148 @@
+.page {
+  background: var(--paper);
+  min-height: 100vh;
+}
+
+.header {
+  background: var(--ink);
+  padding: var(--space-8) var(--space-4) var(--space-6);
+}
+
+.headerInner {
+  max-width: 840px;
+  margin: 0 auto;
+}
+
+.heading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--paper);
+}
+
+.subheading {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.875rem;
+  color: var(--filament);
+}
+
+.content {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-10);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.summary {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--ink);
+}
+
+.subtotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.subtotalLabel {
+  font-family: var(--font-sans);
+  color: var(--ink);
+}
+
+.subtotalValue {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.note {
+  margin: var(--space-2) 0 0;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  color: var(--ink-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.continueLink {
+  background: none;
+  border: none;
+  color: var(--copper);
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.continueLink:hover {
+  color: var(--ink);
+}
+
+.checkoutButton {
+  padding: var(--space-3) var(--space-6);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--filament);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.checkoutButton:hover {
+  background: var(--filament-hot);
+}
+
+.empty {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: var(--space-10) var(--space-4);
+  text-align: center;
+}
+
+.emptyHeading {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  color: var(--ink);
+  margin: 0 0 var(--space-2);
+}
+
+.emptyText {
+  color: var(--ink-muted);
+  margin: 0 0 var(--space-5);
+}
+
+.continueButton {
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-sm);
+  background: var(--filament);
+  color: var(--ink);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font-sans);
+}
+
+.continueButton:hover {
+  background: var(--filament-hot);
+}

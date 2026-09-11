@@ -1,0 +1,117 @@
+networks:
+  lamp-network:
+    name: ${COMPOSE_PROJECT_NAME:-lamp-store}-network
+
+volumes:
+  products_db_data:
+  orders_db_data:
+  admin_db_data:
+
+services:
+  products_db:
+    image: postgres:${POSTGRES_IMAGE_TAG:-16-alpine}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lamp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lamp}
+      POSTGRES_DB: lamp_products
+    volumes:
+      - products_db_data:/var/lib/postgresql/data
+    networks:
+      - lamp-network
+    ports:
+      - "${PRODUCTS_DB_HOST_PORT:-5433}:5432"
+
+  products_db_test:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lamp_products_test
+    ports:
+      - "5436:5432"
+
+  orders_db:
+    image: postgres:${POSTGRES_IMAGE_TAG:-16-alpine}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lamp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lamp}
+      POSTGRES_DB: lamp_orders
+    volumes:
+      - orders_db_data:/var/lib/postgresql/data
+    networks:
+      - lamp-network
+    ports:
+      - "${ORDERS_DB_HOST_PORT:-5434}:5432"
+
+  orders_db_test:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: lamp_orders_test
+      POSTGRES_USER: lamp
+      POSTGRES_PASSWORD: lamp
+    ports:
+      - "5437:5432"
+
+  admin_db:
+    image: postgres:${POSTGRES_IMAGE_TAG:-16-alpine}
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lamp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lamp}
+      POSTGRES_DB: lamp_admin
+    volumes:
+      - admin_db_data:/var/lib/postgresql/data
+    networks:
+      - lamp-network
+    ports:
+      - "${ADMIN_DB_HOST_PORT:-5435}:5432"
+
+  admin_db_test:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: lamp_admin_test
+      POSTGRES_USER: lamp
+      POSTGRES_PASSWORD: lamp
+    ports:
+      - "5438:5432"
+
+  products_service:
+    build:
+      context: ./back/products_service
+      dockerfile: Dockerfile
+    env_file:
+      - ./back/products_service/.env
+    depends_on:
+      - products_db
+    networks:
+      - lamp-network
+    ports:
+      - "${PRODUCTS_SERVICE_HOST_PORT:-8001}:8001"
+    restart: unless-stopped
+
+  orders_service:
+    build:
+      context: ./back/orders_service
+      dockerfile: Dockerfile
+    env_file:
+      - ./back/orders_service/.env
+    depends_on:
+      - orders_db
+    networks:
+      - lamp-network
+    ports:
+      - "${ORDERS_SERVICE_HOST_PORT:-8002}:8002"
+    restart: unless-stopped
+
+  admin_service:
+    build:
+      context: ./back/admin_service
+      dockerfile: Dockerfile
+    env_file:
+      - ./back/admin_service/.env
+    depends_on:
+      - admin_db
+    networks:
+      - lamp-network
+    ports:
+      - "${ADMIN_SERVICE_HOST_PORT:-8003}:8003"
+    restart: unless-stopped
